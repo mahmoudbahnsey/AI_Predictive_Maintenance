@@ -1,31 +1,52 @@
-# AI Predictive Maintenance
+AI-Powered Predictive Maintenance 🚀
 
-This project focuses on **AI-powered predictive maintenance**, aiming to predict equipment failures before they occur using machine learning techniques.  
-Predictive maintenance helps reduce downtime, maintenance costs, and unexpected failures in industrial systems.
+SUPERVISED BY: Dr. Dalia Ezzat
 
----
+Prepared by:
 
-## 📌 Project Overview
-The project applies multiple machine learning models to analyze historical maintenance and operational data, then predict whether a machine is likely to fail.
+Mohamed Essam
 
+Mahmoud Mohamed
+
+Andrew Moris
+
+Nada Alaa Moftah
+
+Abdullah Mahmoud
+
+Shaimaa Sayed
+
+Ahmed Mostafa
+
+📌 Project Overview
+
+This project focuses on AI-powered predictive maintenance, aiming to predict equipment failures before they occur using machine learning techniques.
+
+Predictive maintenance helps:
+
+Reduce downtime ⏱
+
+Lower maintenance costs 💰
+
+Prevent unexpected equipment failures ⚙️
+
+The project applies multiple machine learning models to analyze historical maintenance and operational data, predicting potential failures.
 The goal is to compare different algorithms and evaluate their performance for predictive maintenance tasks.
 
----
+🧠 Machine Learning Models Used
 
-## 🧠 Machine Learning Models Used
-The following models are implemented in Python:
+Implemented in Python:
 
-- K-Nearest Neighbors (KNN)
-- Support Vector Machine (SVM)
-- Decision Tree
-- Random Forest
-- Neural Network
+Model	Description
+K-Nearest Neighbors (KNN)	Classifies machines based on similarity to historical data.
+Support Vector Machine (SVM)	Finds the optimal boundary to separate failure and non-failure cases.
+Decision Tree	Uses a tree structure to make decisions based on features.
+Random Forest	Ensemble of decision trees to improve prediction accuracy.
+Neural Network	Deep learning model for capturing complex patterns in data.
 
-Each model is implemented in a separate Python script for clarity and comparison.
+Each model is implemented in a separate Python script for clarity and easier comparison.
 
----
-
-## 📂 Project Structure
+📂 Project Structure
 AI_Predictive_Maintenance/
 │── abstract.txt
 │── converted_dataset.csv
@@ -36,34 +57,34 @@ AI_Predictive_Maintenance/
 │── svm_model.py
 │── README.md
 
-yaml
-Copy code
+📊 Dataset
 
----
+File: converted_dataset.csv
 
-## 📊 Dataset
-- **File:** `converted_dataset.csv`
-- The dataset contains historical machine data used for training and testing the models.
-- Data preprocessing and feature selection are handled inside the model scripts.
+Contains historical machine data used for training and testing the models.
 
----
+Data preprocessing and feature selection are done within each model script.
 
-## ▶️ How to Run the Project
-1. Make sure Python is installed.
-2. Install the required libraries:
-   ```bash
-   pip install numpy pandas scikit-learn matplotlib
+▶️ How to Run the Project
+
+Make sure Python 3.x is installed.
+
+Install required libraries:
+
+pip install numpy pandas scikit-learn matplotlib
+
+
 Run any model script, for example:
 
-bash
-Copy code
 python random_forest.py
-Each script trains the model and outputs the prediction results.
 
-🎯 Project Objective
+
+The script will train the model and output prediction results.
+
+🎯 Project Objectives
+
 Predict machine failures using AI
 
-Compare multiple machine learning models
+Compare multiple machine learning models for predictive maintenance
 
-Demonstrate the effectiveness of predictive maintenance techniques
-
+Demonstrate the effectiveness of AI-powered predictive maintenance techniques
