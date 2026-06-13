@@ -1,0 +1,1817 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VoltiQ • Inverter Monitoring & Fleet Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&amp;family=Space+Grotesk:wght@500;600&amp;display=swap');
+
+    :root {
+      --neon-green: #7CFF00;
+      --deep-black: #050B08;
+      --charcoal: #0C1712;
+      --glass: rgba(12, 23, 18, 0.72);
+    }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: #050B08;
+    }
+
+    .font-display {
+      font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+      font-weight: 600;
+    }
+
+    .sidebar {
+      background: #0C1712;
+      border-right: 1px solid #1F2B24;
+    }
+
+    .nav-item {
+      transition: all 0.2s cubic-bezier(0.23, 1, 0.32, 1);
+      position: relative;
+    }
+
+    .nav-item:hover {
+      background: rgba(124, 255, 0, 0.06);
+      color: #D8E2DC;
+    }
+
+    .nav-item.active {
+      background: #10210D;
+      color: #7CFF00;
+      font-weight: 600;
+    }
+
+    .nav-item.active::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 3px;
+      background: #7CFF00;
+      border-radius: 0 3px 3px 0;
+    }
+
+    .section-header {
+      font-size: 10px;
+      letter-spacing: 1.5px;
+      color: #6B7B73;
+      font-weight: 600;
+    }
+
+    .glass {
+      background: var(--glass);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(124, 255, 0, 0.12);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    }
+
+    .neon-text {
+      color: #7CFF00;
+      text-shadow: 0 0 8px rgba(124, 255, 0, 0.4);
+    }
+
+    .premium-card {
+      transition: transform 0.2s cubic-bezier(0.23, 1, 0.32, 1), 
+                  box-shadow 0.2s cubic-bezier(0.23, 1, 0.32, 1),
+                  border-color 0.2s ease;
+    }
+
+    .premium-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+      border-color: rgba(124, 255, 0, 0.3);
+    }
+
+    .metric-value {
+      font-variant-numeric: tabular-nums;
+      transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+    }
+
+    .status-online { background: #10210D; color: #7CFF00; }
+    .status-warning { background: #3A2A0A; color: #FBBF24; }
+    .status-offline { background: #2A0F0F; color: #FF4D4D; }
+
+    .severity-critical { background: #2A0F0F; color: #FF4D4D; }
+    .severity-warning { background: #3A2A0A; color: #FBBF24; }
+    .severity-minor { background: #10210D; color: #7CFF00; }
+
+    .page {
+      display: none;
+    }
+    .page.active {
+      display: block;
+    }
+
+    .subtle-grid {
+      background-image: 
+        linear-gradient(rgba(124, 255, 0, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(124, 255, 0, 0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+    }
+
+    .kpi-card {
+      transition: all 0.2s ease;
+    }
+
+    .kpi-card:hover {
+      transform: translateY(-1px);
+    }
+
+    .table-row {
+      transition: background-color 0.1s ease;
+    }
+
+    .table-row:hover {
+      background: rgba(124, 255, 0, 0.04);
+    }
+
+    .neon-button {
+      background: #7CFF00;
+      color: #050B08;
+      font-weight: 600;
+      transition: all 0.2s ease;
+    }
+
+    .neon-button:hover {
+      background: #5FD100;
+      box-shadow: 0 0 15px rgba(124, 255, 0, 0.5);
+    }
+
+    .glass-button {
+      background: rgba(124, 255, 0, 0.08);
+      border: 1px solid rgba(124, 255, 0, 0.2);
+      transition: all 0.2s ease;
+    }
+
+    .glass-button:hover {
+      background: rgba(124, 255, 0, 0.15);
+      border-color: #7CFF00;
+    }
+
+    .modal {
+      animation: modalPop 0.2s cubic-bezier(0.23, 1, 0.32, 1);
+    }
+
+    @keyframes modalPop {
+      from { transform: scale(0.95); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    .toast {
+      animation: toastSlide 0.3s ease forwards;
+    }
+
+    .energy-number {
+      font-variant-numeric: tabular-nums;
+    }
+
+    .futuristic-input {
+      background: #0C1712;
+      border: 1px solid #1F2B24;
+      transition: all 0.2s ease;
+    }
+
+    .futuristic-input:focus {
+      border-color: #7CFF00;
+      box-shadow: 0 0 0 3px rgba(124, 255, 0, 0.1);
+      background: #10210D;
+    }
+
+    .chart-container {
+      position: relative;
+    }
+
+    .sidebar-logo {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -1px;
+    }
+  </style>
+</head>
+<body class="bg-[#050B08] text-[#D8E2DC] min-h-screen">
+  <div class="flex h-screen overflow-hidden">
+    <!-- SIDEBAR -->
+    <div class="w-64 sidebar flex flex-col flex-shrink-0">
+      <!-- Logo -->
+      <div class="px-6 pt-6 pb-5 border-b border-[#1F2B24]">
+        <div class="flex items-center gap-x-3">
+          <div class="w-9 h-9 rounded-2xl bg-[#7CFF00] flex items-center justify-center shadow-[0_0_20px_rgba(124,255,0,0.4)]">
+            <i class="fa-solid fa-bolt text-[#050B08] text-2xl"></i>
+          </div>
+          <div>
+            <div class="sidebar-logo font-display tracking-tighter text-white">VoltiQ</div>
+            <div class="text-[10px] text-[#6B7B73] -mt-1">ENERGY COMMAND CENTER</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Navigation -->
+      <div class="px-3 py-4 flex-1 overflow-y-auto">
+        <div class="space-y-1">
+          <div onclick="switchPage('dashboard')" class="nav-item active flex items-center gap-x-3 px-3 py-2.5 rounded-2xl cursor-pointer" id="nav-dashboard">
+            <i class="fa-solid fa-tachometer-alt w-4"></i>
+            <span>Dashboard</span>
+          </div>
+          <div onclick="switchPage('systems')" class="nav-item flex items-center gap-x-3 px-3 py-2.5 rounded-2xl cursor-pointer" id="nav-systems">
+            <i class="fa-solid fa-solar-panel w-4"></i>
+            <span>Systems</span>
+          </div>
+          <div onclick="switchPage('devices')" class="nav-item flex items-center gap-x-3 px-3 py-2.5 rounded-2xl cursor-pointer" id="nav-devices">
+            <i class="fa-solid fa-microchip w-4"></i>
+            <span>Devices</span>
+          </div>
+          <div onclick="switchPage('analytics')" class="nav-item flex items-center gap-x-3 px-3 py-2.5 rounded-2xl cursor-pointer" id="nav-analytics">
+            <i class="fa-solid fa-chart-line w-4"></i>
+            <span>Analytics</span>
+          </div>
+          <div onclick="switchPage('fault-history')" class="nav-item flex items-center gap-x-3 px-3 py-2.5 rounded-2xl cursor-pointer" id="nav-fault-history">
+            <i class="fa-solid fa-bolt w-4"></i>
+            <span>Fault History</span>
+          </div>
+          <div onclick="switchPage('alerts')" class="nav-item flex items-center gap-x-3 px-3 py-2.5 rounded-2xl cursor-pointer" id="nav-alerts">
+            <i class="fa-solid fa-bell w-4"></i>
+            <span>Alerts</span>
+          </div>
+          <div onclick="switchPage('reports')" class="nav-item flex items-center gap-x-3 px-3 py-2.5 rounded-2xl cursor-pointer" id="nav-reports">
+            <i class="fa-solid fa-file-alt w-4"></i>
+            <span>Reports</span>
+          </div>
+        </div>
+
+        <div class="px-3 mt-6 mb-2">
+          <div class="section-header mb-2">SYSTEM</div>
+        </div>
+
+        <div class="space-y-1">
+          <div onclick="switchPage('settings')" class="nav-item flex items-center gap-x-3 px-3 py-2.5 rounded-2xl cursor-pointer" id="nav-settings">
+            <i class="fa-solid fa-cog w-4"></i>
+            <span>Settings</span>
+          </div>
+          <div onclick="switchPage('users')" class="nav-item flex items-center gap-x-3 px-3 py-2.5 rounded-2xl cursor-pointer" id="nav-users">
+            <i class="fa-solid fa-users w-4"></i>
+            <span>Users</span>
+          </div>
+          <div onclick="switchPage('security')" class="nav-item flex items-center gap-x-3 px-3 py-2.5 rounded-2xl cursor-pointer" id="nav-security">
+            <i class="fa-solid fa-shield-alt w-4"></i>
+            <span>Security Center</span>
+          </div>
+          <div onclick="switchPage('logs')" class="nav-item flex items-center gap-x-3 px-3 py-2.5 rounded-2xl cursor-pointer" id="nav-logs">
+            <i class="fa-solid fa-history w-4"></i>
+            <span>Logs</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- User Footer -->
+      <div class="p-4 border-t border-[#1F2B24]">
+        <div class="flex items-center gap-x-3">
+          <div class="w-8 h-8 rounded-full bg-[#7CFF00] flex items-center justify-center text-[#050B08] text-xs font-bold">AR</div>
+          <div class="flex-1 min-w-0">
+            <div class="text-sm font-medium truncate">Alex Rivera</div>
+            <div class="text-[10px] text-[#6B7B73]">Admin • California HQ</div>
+          </div>
+          <button onclick="logout()" class="text-[#6B7B73] hover:text-[#FF4D4D] transition-colors">
+            <i class="fa-solid fa-sign-out-alt"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div class="flex-1 flex flex-col min-w-0">
+      <!-- Top Header -->
+      <div class="h-16 border-b border-[#1F2B24] bg-[#0C1712] flex items-center px-8 justify-between flex-shrink-0">
+        <div class="flex items-center gap-x-4">
+          <div id="page-title" class="font-display text-2xl font-semibold tracking-tight text-white">Dashboard</div>
+          <div id="live-indicator" class="hidden items-center gap-x-2 px-3 py-1 bg-[#10210D] border border-[#1F2B24] rounded-2xl text-xs">
+            <div class="w-1.5 h-1.5 bg-[#7CFF00] rounded-full animate-pulse"></div>
+            <span class="text-[#7CFF00]">LIVE</span>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-x-4">
+          <!-- Global Search - Fully Interactive (triggers VOLT or filters) -->
+          <div class="relative w-80">
+            <input type="text" id="global-search" placeholder="Search systems, devices, or alerts... (or ask VOLT)" 
+                   class="futuristic-input w-full rounded-2xl pl-10 pr-4 py-2 text-sm focus:outline-none"
+                   onkeydown="if (event.key === 'Enter') { const q = this.value.trim(); if (q) { if (q.length > 3 && (q.includes('?') || q.toLowerCase().includes('show') || q.toLowerCase().includes('what'))) { if (!document.getElementById('volt-chat-window').classList.contains('hidden') || true) { document.getElementById('volt-input').value = q; sendVoltMessage(); } else { toggleVoltChat(); setTimeout(()=>{document.getElementById('volt-input').value = q; sendVoltMessage();},300); } this.value=''; } else { filterCurrentPage(q); } }}">
+            <i class="fa-solid fa-search absolute left-3.5 top-3 text-[#6B7B73]"></i>
+          </div>
+
+          <div class="flex items-center gap-x-2">
+            <button onclick="showToast('Notifications cleared')" class="glass-button px-3 py-2 rounded-2xl text-sm flex items-center gap-x-2 hover:bg-white/5">
+              <i class="fa-solid fa-bell"></i>
+              <span class="hidden md:inline">12</span>
+            </button>
+            <button onclick="refreshAllData()" class="glass-button px-3 py-2 rounded-2xl text-sm flex items-center gap-x-2">
+              <i class="fa-solid fa-sync-alt"></i>
+              <span class="hidden md:inline">Refresh</span>
+            </button>
+          </div>
+
+          <div class="flex items-center gap-x-3 pl-4 border-l border-[#1F2B24]">
+            <div class="text-right">
+              <div class="text-sm font-medium">Alex Rivera</div>
+              <div class="text-[10px] text-[#6B7B73]">Last sync: just now</div>
+            </div>
+            <div class="w-9 h-9 rounded-2xl bg-[#7CFF00] text-[#050B08] flex items-center justify-center font-bold text-sm ring-2 ring-[#7CFF00]/30">AR</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Page Content Container -->
+      <div class="flex-1 overflow-auto p-8 subtle-grid" id="main-content">
+        
+        <!-- DASHBOARD PAGE -->
+        <div id="page-dashboard" class="page active">
+          <div class="mb-8">
+            <div class="flex items-end justify-between">
+              <div>
+                <div class="text-sm text-[#7CFF00] font-medium tracking-[1px]">COMMAND CENTER • LIVE</div>
+                <h1 class="font-display text-4xl tracking-tighter font-semibold">Good morning, Alex.</h1>
+              </div>
+              <div class="text-right text-xs text-[#6B7B73]">
+                <div>Grid: <span class="text-[#7CFF00]">Stable</span></div>
+                <div>3,481 devices online</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- KPI Row - Fully Interactive -->
+          <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 mb-8">
+            <div onclick="switchPage('systems')" class="glass rounded-3xl p-5 kpi-card cursor-pointer hover:border-[#7CFF00]/50">
+              <div class="text-xs text-[#6B7B73]">ACTIVE SYSTEMS</div>
+              <div class="text-4xl font-semibold tabular-nums mt-2 energy-number" data-value="184">184</div>
+              <div class="text-xs text-[#7CFF00] mt-1">+3 since yesterday • Click to manage</div>
+            </div>
+            <div onclick="switchPage('devices')" class="glass rounded-3xl p-5 kpi-card cursor-pointer hover:border-[#7CFF00]/50">
+              <div class="text-xs text-[#6B7B73]">CONNECTED DEVICES</div>
+              <div class="text-4xl font-semibold tabular-nums mt-2 energy-number" data-value="3481">3,481</div>
+              <div class="text-xs text-[#7CFF00] mt-1">98.6% online • Click for details</div>
+            </div>
+            <div onclick="switchPage('analytics')" class="glass rounded-3xl p-5 kpi-card cursor-pointer hover:border-[#7CFF00]/50">
+              <div class="text-xs text-[#6B7B73]">SOLAR OUTPUT</div>
+              <div class="text-4xl font-semibold tabular-nums mt-2"><span class="energy-number" data-value="10.2">10.2</span> <span class="text-xl">kW</span></div>
+              <div class="text-xs text-[#7CFF00] mt-1">+1.4 kW this hour • View trends</div>
+            </div>
+            <div onclick="switchPage('analytics')" class="glass rounded-3xl p-5 kpi-card cursor-pointer hover:border-[#7CFF00]/50">
+              <div class="text-xs text-[#6B7B73]">CONSUMPTION</div>
+              <div class="text-4xl font-semibold tabular-nums mt-2"><span class="energy-number" data-value="8.7">8.7</span> <span class="text-xl">kW</span></div>
+              <div class="text-xs text-[#FBBF24] mt-1">+0.8 kW this hour • Analyze now</div>
+            </div>
+            <div onclick="switchPage('analytics')" class="glass rounded-3xl p-5 kpi-card cursor-pointer hover:border-[#7CFF00]/50">
+              <div class="text-xs text-[#6B7B73]">GRID EXPORT</div>
+              <div class="text-4xl font-semibold tabular-nums mt-2"><span class="energy-number" data-value="1.5">1.5</span> <span class="text-xl">kW</span></div>
+              <div class="text-xs text-[#7CFF00] mt-1">Net positive • See full analytics</div>
+            </div>
+            <div onclick="switchPage('dashboard')" class="glass rounded-3xl p-5 kpi-card cursor-pointer hover:border-[#7CFF00]/50">
+              <div class="text-xs text-[#6B7B73]">SYSTEM UPTIME</div>
+              <div class="text-4xl font-semibold tabular-nums mt-2"><span class="energy-number" data-value="98.6">98.6</span><span class="text-xl">%</span></div>
+              <div class="text-xs text-[#7CFF00] mt-1">30 days • Refresh live data</div>
+            </div>
+            <div onclick="switchPage('alerts')" class="glass rounded-3xl p-5 kpi-card cursor-pointer hover:border-[#FF4D4D]/50 border border-[#FF4D4D]/20">
+              <div class="text-xs text-[#6B7B73]">CRITICAL ALERTS</div>
+              <div class="text-4xl font-semibold tabular-nums mt-2 text-[#FF4D4D]">7</div>
+              <div class="text-xs text-[#FF4D4D] mt-1">2 new in last hour • Click to resolve</div>
+            </div>
+            <div onclick="switchPage('security')" class="glass rounded-3xl p-5 kpi-card cursor-pointer hover:border-[#7CFF00]/50">
+              <div class="text-xs text-[#6B7B73]">AVG EFFICIENCY</div>
+              <div class="text-4xl font-semibold tabular-nums mt-2"><span class="energy-number" data-value="94">94</span><span class="text-xl">%</span></div>
+              <div class="text-xs text-[#7CFF00] mt-1">+2% this week • Check Security</div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Energy Production Chart -->
+            <div class="glass rounded-3xl p-6 lg:col-span-2">
+              <div class="flex items-center justify-between mb-4">
+                <div>
+                  <div class="font-semibold">Energy Production (Last 24h)</div>
+                  <div class="text-xs text-[#6B7B73]">Total: 142.8 MWh</div>
+                </div>
+                <div class="text-xs px-3 py-1 bg-[#10210D] rounded-2xl text-[#7CFF00]">LIVE</div>
+              </div>
+              <div class="h-72">
+                <canvas id="production-chart"></canvas>
+              </div>
+            </div>
+
+            <!-- Device Health -->
+            <div class="glass rounded-3xl p-6">
+              <div class="font-semibold mb-4">Device Health Summary</div>
+              <div class="space-y-4">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-x-2"><i class="fa-solid fa-check-circle text-[#7CFF00]"></i> <span>Healthy</span></div>
+                  <div class="font-mono font-semibold">2,984 <span class="text-xs text-[#6B7B73]">/ 3,481</span></div>
+                </div>
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-x-2"><i class="fa-solid fa-exclamation-triangle text-[#FBBF24]"></i> <span>Warning</span></div>
+                  <div class="font-mono font-semibold">412</div>
+                </div>
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-x-2"><i class="fa-solid fa-times-circle text-[#FF4D4D]"></i> <span>Critical</span></div>
+                  <div class="font-mono font-semibold">85</div>
+                </div>
+              </div>
+
+              <div class="mt-6 pt-4 border-t border-[#1F2B24]">
+                <div class="text-xs mb-2 text-[#6B7B73]">OVERALL FLEET HEALTH</div>
+                <div class="flex items-center gap-x-3">
+                  <div class="flex-1 h-2 bg-[#1F2B24] rounded-full overflow-hidden">
+                    <div class="h-2 bg-gradient-to-r from-[#7CFF00] to-[#5FD100] rounded-full" style="width: 94%"></div>
+                  </div>
+                  <div class="font-semibold tabular-nums">94%</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Live Status + Recent Alerts -->
+            <div class="glass rounded-3xl p-6 lg:col-span-2">
+              <div class="font-semibold mb-4 flex items-center justify-between">
+                <span>Live System Status</span>
+                <span class="text-xs px-2 py-0.5 bg-[#7CFF00] text-[#050B08] rounded font-bold">ALL SYSTEMS NOMINAL</span>
+              </div>
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div class="bg-[#10210D] rounded-2xl p-3 text-center">
+                  <div class="text-xs text-[#6B7B73]">California Farm A</div>
+                  <div class="text-xl font-semibold tabular-nums text-[#7CFF00]">99.8%</div>
+                  <div class="text-[10px]">Online • 412 devices</div>
+                </div>
+                <div class="bg-[#10210D] rounded-2xl p-3 text-center">
+                  <div class="text-xs text-[#6B7B73]">Nevada Solar 3</div>
+                  <div class="text-xl font-semibold tabular-nums text-[#FBBF24]">87.4%</div>
+                  <div class="text-[10px]">Warning • 1 device offline</div>
+                </div>
+                <div class="bg-[#10210D] rounded-2xl p-3 text-center">
+                  <div class="text-xs text-[#6B7B73]">Texas Wind + Solar</div>
+                  <div class="text-xl font-semibold tabular-nums text-[#7CFF00]">100%</div>
+                  <div class="text-[10px]">Online • 892 devices</div>
+                </div>
+                <div class="bg-[#10210D] rounded-2xl p-3 text-center">
+                  <div class="text-xs text-[#6B7B73]">Arizona HQ</div>
+                  <div class="text-xl font-semibold tabular-nums text-[#7CFF00]">98.1%</div>
+                  <div class="text-[10px]">Online • 1,175 devices</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="glass rounded-3xl p-6">
+              <div class="font-semibold mb-3">Recent Alerts</div>
+              <div class="space-y-3 text-sm">
+                <div class="flex items-start gap-2">
+                  <div class="w-2 h-2 mt-1.5 bg-[#FF4D4D] rounded-full flex-shrink-0"></div>
+                  <div class="flex-1"><span class="font-medium">INV-2841</span> temperature critical in Nevada Solar 3</div>
+                  <div class="text-xs text-[#6B7B73]">2m ago</div>
+                </div>
+                <div class="flex items-start gap-2">
+                  <div class="w-2 h-2 mt-1.5 bg-[#FBBF24] rounded-full flex-shrink-0"></div>
+                  <div class="flex-1">Grid export dropped 18% at California Farm A</div>
+                  <div class="text-xs text-[#6B7B73]">14m ago</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SYSTEMS PAGE -->
+        <div id="page-systems" class="page">
+          <div class="flex items-center justify-between mb-6">
+            <div>
+              <h1 class="font-display text-3xl tracking-tighter font-semibold">Systems</h1>
+              <p class="text-[#6B7B73]">Manage all connected energy sites</p>
+            </div>
+            <button onclick="showAddSystemModal()" class="neon-button px-5 py-2.5 rounded-2xl text-sm flex items-center gap-x-2">
+              <i class="fa-solid fa-plus"></i> <span>Add New System</span>
+            </button>
+          </div>
+
+          <div class="flex gap-3 mb-5">
+            <input type="text" id="systems-search" placeholder="Search systems..." onkeyup="filterSystems()" class="futuristic-input flex-1 max-w-xs rounded-2xl px-4 py-2 text-sm">
+            <select id="systems-status-filter" onchange="filterSystems()" class="futuristic-input rounded-2xl px-4 py-2 text-sm">
+              <option value="">All Status</option>
+              <option value="online">Online</option>
+              <option value="warning">Warning</option>
+              <option value="offline">Offline</option>
+            </select>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5" id="systems-grid">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+
+        <!-- DEVICES PAGE -->
+        <div id="page-devices" class="page">
+          <div class="flex items-center justify-between mb-6">
+            <div>
+              <h1 class="font-display text-3xl tracking-tighter font-semibold">Devices</h1>
+              <p class="text-[#6B7B73]">3,481 devices across 184 systems</p>
+            </div>
+            <button onclick="showAddDeviceModal()" class="glass-button px-5 py-2.5 rounded-2xl text-sm flex items-center gap-x-2">
+              <i class="fa-solid fa-plus"></i> Add Device
+            </button>
+          </div>
+
+          <div class="flex flex-wrap gap-3 mb-4">
+            <input type="text" placeholder="Search devices..." id="devices-search" onkeyup="filterDevices()" class="futuristic-input rounded-2xl px-4 py-2 text-sm w-72">
+            <select id="device-type-filter" onchange="filterDevices()" class="futuristic-input rounded-2xl px-4 py-2 text-sm">
+              <option value="">All Types</option>
+              <option value="Inverter">Inverter</option>
+              <option value="Sensor">Sensor</option>
+              <option value="Meter">Meter</option>
+              <option value="Gateway">Gateway</option>
+            </select>
+            <select id="device-status-filter" onchange="filterDevices()" class="futuristic-input rounded-2xl px-4 py-2 text-sm">
+              <option value="">All Status</option>
+              <option value="Online">Online</option>
+              <option value="Warning">Warning</option>
+              <option value="Offline">Offline</option>
+            </select>
+          </div>
+
+          <div class="glass rounded-3xl overflow-hidden">
+            <table class="w-full">
+              <thead>
+                <tr class="border-b border-[#1F2B24] text-xs text-[#6B7B73]">
+                  <th class="text-left px-6 py-4 font-medium">Device</th>
+                  <th class="text-left px-4 py-4 font-medium">Type</th>
+                  <th class="text-left px-4 py-4 font-medium">System</th>
+                  <th class="text-left px-4 py-4 font-medium">Status</th>
+                  <th class="text-left px-4 py-4 font-medium">Temp</th>
+                  <th class="text-left px-4 py-4 font-medium">Current</th>
+                  <th class="text-left px-4 py-4 font-medium">Firmware</th>
+                  <th class="text-right px-6 py-4 font-medium">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="devices-table" class="text-sm">
+                <!-- Populated by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ANALYTICS PAGE -->
+        <div id="page-analytics" class="page">
+          <div class="flex items-center justify-between mb-6">
+            <div>
+              <h1 class="font-display text-3xl tracking-tighter font-semibold">Analytics</h1>
+            </div>
+            <div class="flex gap-2">
+              <button onclick="setAnalyticsRange('today')" class="px-4 py-1.5 text-sm rounded-2xl bg-[#10210D] border border-[#1F2B24] hover:border-[#7CFF00]">Today</button>
+              <button onclick="setAnalyticsRange('week')" class="px-4 py-1.5 text-sm rounded-2xl bg-[#10210D] border border-[#1F2B24] hover:border-[#7CFF00]">Week</button>
+              <button onclick="setAnalyticsRange('month')" class="px-4 py-1.5 text-sm rounded-2xl bg-[#7CFF00] text-[#050B08]">Month</button>
+              <button onclick="setAnalyticsRange('year')" class="px-4 py-1.5 text-sm rounded-2xl bg-[#10210D] border border-[#1F2B24] hover:border-[#7CFF00]">Year</button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="glass rounded-3xl p-6">
+              <div class="font-semibold mb-4">Production vs Consumption</div>
+              <div class="h-80"><canvas id="analytics-production"></canvas></div>
+            </div>
+            <div class="glass rounded-3xl p-6">
+              <div class="font-semibold mb-4">Grid Export Trends</div>
+              <div class="h-80"><canvas id="analytics-export"></canvas></div>
+            </div>
+            <div class="glass rounded-3xl p-6">
+              <div class="font-semibold mb-4">System Efficiency by Site</div>
+              <div class="h-80"><canvas id="analytics-efficiency"></canvas></div>
+            </div>
+            <div class="glass rounded-3xl p-6">
+              <div class="font-semibold mb-4">Peak Demand Hours</div>
+              <div class="h-80"><canvas id="analytics-peak"></canvas></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- FAULT HISTORY -->
+        <div id="page-fault-history" class="page">
+          <div class="flex items-center justify-between mb-6">
+            <h1 class="font-display text-3xl tracking-tighter font-semibold">Fault History</h1>
+            <button onclick="exportFaults()" class="glass-button px-4 py-2 rounded-2xl text-sm">Export CSV</button>
+          </div>
+
+          <div class="flex gap-3 mb-4">
+            <input type="text" placeholder="Search faults..." id="faults-search" onkeyup="filterFaults()" class="futuristic-input rounded-2xl px-4 py-2 text-sm flex-1 max-w-sm">
+            <select id="fault-severity" onchange="filterFaults()" class="futuristic-input rounded-2xl px-4 py-2 text-sm">
+              <option value="">All Severities</option>
+              <option value="Critical">Critical</option>
+              <option value="Warning">Warning</option>
+              <option value="Minor">Minor</option>
+            </select>
+            <select id="fault-status" onchange="filterFaults()" class="futuristic-input rounded-2xl px-4 py-2 text-sm">
+              <option value="">All Status</option>
+              <option value="Resolved">Resolved</option>
+              <option value="Unresolved">Unresolved</option>
+            </select>
+          </div>
+
+          <div class="glass rounded-3xl overflow-hidden">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="border-b border-[#1F2B24] text-xs text-[#6B7B73]">
+                  <th class="px-6 py-4 text-left">Fault</th>
+                  <th class="px-4 py-4 text-left">Device</th>
+                  <th class="px-4 py-4 text-left">Severity</th>
+                  <th class="px-4 py-4 text-left">Detected</th>
+                  <th class="px-4 py-4 text-left">Status</th>
+                  <th class="px-6 py-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="faults-table"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ALERTS -->
+        <div id="page-alerts" class="page">
+          <div class="flex items-center justify-between mb-6">
+            <div>
+              <h1 class="font-display text-3xl tracking-tighter font-semibold">Live Alerts</h1>
+              <div class="text-sm text-[#FF4D4D]">7 critical • 23 warnings</div>
+            </div>
+            <button onclick="acknowledgeAllAlerts()" class="glass-button px-5 py-2.5 rounded-2xl text-sm">Acknowledge All</button>
+          </div>
+
+          <div class="space-y-3" id="alerts-list">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+
+        <!-- REPORTS -->
+        <div id="page-reports" class="page">
+          <h1 class="font-display text-3xl tracking-tighter font-semibold mb-6">Reports</h1>
+
+          <div class="glass rounded-3xl p-6 mb-6">
+            <div class="font-semibold mb-4">Generate New Report</div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <select id="report-type" class="futuristic-input rounded-2xl px-4 py-3 text-sm">
+                <option>Energy Production Report</option>
+                <option>Consumption Report</option>
+                <option>Fault Report</option>
+                <option>Device Performance Report</option>
+                <option>System Uptime Report</option>
+                <option>Security Activity Report</option>
+              </select>
+              <input type="date" class="futuristic-input rounded-2xl px-4 py-3 text-sm">
+              <button onclick="generateReport()" class="neon-button px-8 rounded-2xl">Generate &amp; Download</button>
+            </div>
+          </div>
+
+          <div class="glass rounded-3xl p-6">
+            <div class="font-semibold mb-4">Recent Reports</div>
+            <div class="space-y-2 text-sm" id="recent-reports"></div>
+          </div>
+        </div>
+
+        <!-- SETTINGS -->
+        <div id="page-settings" class="page">
+          <h1 class="font-display text-3xl tracking-tighter font-semibold mb-6">Settings</h1>
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="glass rounded-3xl p-6">
+              <div class="font-semibold mb-4">Account</div>
+              <div class="space-y-4">
+                <div><label class="text-xs text-[#6B7B73]">Full Name</label><input value="Alex Rivera" class="futuristic-input w-full rounded-2xl px-4 py-3 text-sm mt-1"></div>
+                <div><label class="text-xs text-[#6B7B73]">Email</label><input value="alex.rivera@voltiq.energy" class="futuristic-input w-full rounded-2xl px-4 py-3 text-sm mt-1"></div>
+              </div>
+            </div>
+            <div class="glass rounded-3xl p-6">
+              <div class="font-semibold mb-4">Preferences</div>
+              <div class="space-y-4">
+                <div class="flex items-center justify-between"><span>Dark Mode</span> <input type="checkbox" checked class="accent-[#7CFF00]"></div>
+                <div class="flex items-center justify-between"><span>Real-time Updates</span> <input type="checkbox" checked class="accent-[#7CFF00]"></div>
+                <div><label class="text-xs text-[#6B7B73]">Timezone</label><select class="futuristic-input w-full rounded-2xl px-4 py-3 text-sm mt-1"><option>PST (UTC-8)</option></select></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- USERS -->
+        <div id="page-users" class="page">
+          <div class="flex items-center justify-between mb-6">
+            <h1 class="font-display text-3xl tracking-tighter font-semibold">Users</h1>
+            <button onclick="showInviteUserModal()" class="neon-button px-5 py-2.5 rounded-2xl text-sm flex items-center gap-x-2"><i class="fa-solid fa-user-plus"></i> Invite User</button>
+          </div>
+
+          <div class="glass rounded-3xl overflow-hidden">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="border-b border-[#1F2B24] text-xs text-[#6B7B73]">
+                  <th class="px-6 py-4 text-left">User</th>
+                  <th class="px-4 py-4 text-left">Role</th>
+                  <th class="px-4 py-4 text-left">Status</th>
+                  <th class="px-4 py-4 text-left">Last Login</th>
+                  <th class="px-6 py-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="users-table"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- SECURITY CENTER -->
+        <div id="page-security" class="page">
+          <h1 class="font-display text-3xl tracking-tighter font-semibold mb-6">Security Center</h1>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="glass rounded-3xl p-6">
+              <div class="text-xs text-[#6B7B73]">SECURITY SCORE</div>
+              <div class="text-6xl font-semibold tabular-nums mt-2">94</div>
+              <div class="text-sm text-[#7CFF00]">Excellent</div>
+            </div>
+            <div class="glass rounded-3xl p-6 space-y-4">
+              <div class="flex justify-between"><span>Two-Factor Authentication</span> <span class="text-[#7CFF00]">Enabled</span></div>
+              <div class="flex justify-between"><span>Password Strength</span> <span class="text-[#7CFF00]">Strong</span></div>
+              <button onclick="showToast('2FA settings opened')" class="glass-button w-full py-2 rounded-2xl text-sm">Manage 2FA</button>
+            </div>
+            <div class="glass rounded-3xl p-6">
+              <div class="text-xs text-[#6B7B73] mb-2">ACTIVE SESSIONS (4)</div>
+              <div class="text-xs space-y-1">
+                <div>MacBook Pro • San Francisco • Now</div>
+                <div>iPhone 15 • Mobile • 2h ago</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- LOGS -->
+        <div id="page-logs" class="page">
+          <div class="flex items-center justify-between mb-6">
+            <h1 class="font-display text-3xl tracking-tighter font-semibold">Activity Logs</h1>
+            <button onclick="exportLogs()" class="glass-button px-4 py-2 rounded-2xl text-sm">Export</button>
+          </div>
+          <div class="glass rounded-3xl p-6">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="border-b border-[#1F2B24] text-xs text-[#6B7B73]">
+                  <th class="py-3 px-4 text-left">Time</th>
+                  <th class="py-3 px-4 text-left">Actor</th>
+                  <th class="py-3 px-4 text-left">Action</th>
+                  <th class="py-3 px-4 text-left">Target</th>
+                  <th class="py-3 px-4 text-left">Status</th>
+                </tr>
+              </thead>
+              <tbody id="logs-table" class="text-sm"></tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="hidden fixed bottom-6 right-6 bg-[#0C1712] border border-[#1F2B24] text-sm px-5 py-3 rounded-2xl shadow-xl max-w-xs"></div>
+
+  <!-- Generic Modal -->
+  <div id="modal" onclick="if (event.target.id === 'modal') hideModal()" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+    <div onclick="event.stopImmediatePropagation()" id="modal-content" class="glass rounded-3xl w-full max-w-md p-6"></div>
+  </div>
+
+  <script>
+    // Tailwind config
+    function initTailwind() {
+      document.documentElement.style.setProperty('--accent', '#7CFF00');
+    }
+
+    // Global state
+    let currentPage = 'dashboard';
+    let charts = {};
+
+    // Sample Data
+    let systemsData = [
+      { id: 1, name: "California Solar Farm A", location: "Mojave, CA", status: "online", devices: 412, output: "4.2", production: "48.6", lastUpdate: "just now" },
+      { id: 2, name: "Nevada Solar 3", location: "Las Vegas, NV", status: "warning", devices: 289, output: "2.1", production: "31.4", lastUpdate: "4m ago" },
+      { id: 3, name: "Texas Wind + Solar", location: "West Texas", status: "online", devices: 892, output: "7.8", production: "112.9", lastUpdate: "just now" },
+      { id: 4, name: "Arizona HQ Array", location: "Phoenix, AZ", status: "online", devices: 1175, output: "5.4", production: "67.3", lastUpdate: "1m ago" },
+    ];
+
+    let devicesData = [
+      { id: "INV-2841", name: "Inverter 2841", type: "Inverter", system: "California Solar Farm A", status: "Online", temp: "42°C", current: "12.4A", firmware: "v4.2.1" },
+      { id: "INV-1922", name: "Inverter 1922", type: "Inverter", system: "Nevada Solar 3", status: "Warning", temp: "68°C", current: "8.1A", firmware: "v4.1.9" },
+      { id: "SNS-771", name: "Irradiance Sensor 771", type: "Sensor", system: "Texas Wind + Solar", status: "Online", temp: "38°C", current: "—", firmware: "v2.8.3" },
+    ];
+
+    let faultsData = [
+      { id: "FLT-9842", name: "Over-temperature shutdown", device: "INV-1922", severity: "Critical", detected: "Today, 09:14", status: "Unresolved", notes: "Fan failure suspected" },
+      { id: "FLT-9831", name: "Grid voltage fluctuation", device: "INV-2841", severity: "Warning", detected: "Yesterday", status: "Resolved", notes: "Utility side issue" },
+    ];
+
+    let alertsData = [
+      { id: 1, title: "INV-1922 temperature critical", device: "Nevada Solar 3", severity: "Critical", time: "2 minutes ago", status: "Active" },
+      { id: 2, title: "Grid export dropped 18%", device: "California Farm A", severity: "Warning", time: "14 minutes ago", status: "Active" },
+    ];
+
+    let usersData = [
+      { id: 1, name: "Alex Rivera", email: "alex@voltiq.energy", role: "Admin", status: "Active", lastLogin: "Just now" },
+      { id: 2, name: "Jordan Hale", email: "jordan@voltiq.energy", role: "Manager", status: "Active", lastLogin: "2h ago" },
+      { id: 3, name: "Sam Patel", email: "sam@voltiq.energy", role: "Technician", status: "Active", lastLogin: "Yesterday" },
+    ];
+
+    let logsData = [
+      { time: "Just now", actor: "Alex Rivera", action: "Acknowledged alert", target: "INV-1922", status: "Success" },
+      { time: "14m ago", actor: "System", action: "Device restarted", target: "INV-2841", status: "Success" },
+    ];
+
+    // Navigation - Robust with hash support for direct links like /#systems
+
+    function switchPage(page, updateHash = true) {
+      // Hide all pages
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      
+      // Show target page
+      const target = document.getElementById(`page-${page}`);
+      if (target) {
+        target.classList.add('active');
+      } else {
+        // Fallback to dashboard if page not found
+        const dash = document.getElementById('page-dashboard');
+        if (dash) dash.classList.add('active');
+        page = 'dashboard';
+      }
+
+      // Update sidebar active state
+      document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+      const navItem = document.getElementById(`nav-${page}`);
+      if (navItem) navItem.classList.add('active');
+
+      // Update page title in header
+      const titleEl = document.getElementById('page-title');
+      const titles = {
+        'dashboard': 'Dashboard',
+        'systems': 'Systems',
+        'devices': 'Devices',
+        'analytics': 'Analytics',
+        'fault-history': 'Fault History',
+        'alerts': 'Alerts',
+        'reports': 'Reports',
+        'settings': 'Settings',
+        'users': 'Users',
+        'security': 'Security Center',
+        'logs': 'Activity Logs'
+      };
+      if (titleEl) titleEl.textContent = titles[page] || 'Dashboard';
+
+      currentPage = page;
+
+      // Update URL hash for shareable links and browser back/forward
+      if (updateHash) {
+        history.replaceState(null, null, `#${page}`);
+      }
+
+      // Initialize / refresh page-specific content
+      if (page === 'systems') renderSystems();
+      if (page === 'devices') renderDevices();
+      if (page === 'fault-history') renderFaults();
+      if (page === 'alerts') renderAlerts();
+      if (page === 'reports') renderReports();
+      if (page === 'users') renderUsers();
+      if (page === 'logs') renderLogs();
+      if (page === 'analytics') initAnalyticsCharts();
+    }
+
+    // Handle direct hash links on load or browser navigation
+    function handleHashNavigation() {
+      const hash = window.location.hash.replace('#', '');
+      if (hash && document.getElementById(`page-${hash}`)) {
+        switchPage(hash, false); // false = don't update hash again
+      } else {
+        switchPage('dashboard', false);
+      }
+    }
+
+    // Listen for hash changes (back/forward buttons)
+    window.addEventListener('hashchange', () => {
+      const hash = window.location.hash.replace('#', '');
+      if (hash) {
+        switchPage(hash, false);
+      }
+    });
+
+    // Toast
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      toast.innerHTML = `<div class="flex items-center gap-x-3"><i class="fa-solid fa-check-circle text-[#7CFF00]"></i> <span>${message}</span></div>`;
+      toast.classList.remove('hidden');
+      toast.classList.add('toast', 'flex', 'items-center');
+      
+      setTimeout(() => {
+        toast.classList.add('hidden');
+        toast.classList.remove('flex', 'toast');
+      }, 2800);
+    }
+
+    // Modal helpers
+    function showModal(contentHTML) {
+      const modal = document.getElementById('modal');
+      const content = document.getElementById('modal-content');
+      content.innerHTML = contentHTML;
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+    function hideModal() {
+      const modal = document.getElementById('modal');
+      modal.classList.remove('flex');
+      modal.classList.add('hidden');
+    }
+
+    // Animated numbers
+    function animateNumber(el, target, duration = 1200) {
+      const start = parseFloat(el.textContent) || 0;
+      const end = parseFloat(target);
+      const range = end - start;
+      let startTime = null;
+
+      function step(timestamp) {
+        if (!startTime) startTime = timestamp;
+        const progress = Math.min((timestamp - startTime) / duration, 1);
+        const value = start + range * progress;
+        el.textContent = (end % 1 === 0) ? Math.floor(value) : value.toFixed(1);
+        if (progress < 1) {
+          requestAnimationFrame(step);
+        } else {
+          el.textContent = target;
+        }
+      }
+      requestAnimationFrame(step);
+    }
+
+    // Initialize Dashboard numbers
+    function initDashboardNumbers() {
+      const numbers = document.querySelectorAll('#page-dashboard .energy-number');
+      numbers.forEach(el => {
+        const target = el.getAttribute('data-value');
+        setTimeout(() => {
+          animateNumber(el, target);
+        }, 400);
+      });
+    }
+
+    // Render Systems
+    function renderSystems(filtered = systemsData) {
+      const container = document.getElementById('systems-grid');
+      container.innerHTML = '';
+
+      filtered.forEach(sys => {
+        const statusClass = sys.status === 'online' ? 'status-online' : sys.status === 'warning' ? 'status-warning' : 'status-offline';
+        const html = `
+          <div class="glass rounded-3xl p-5 premium-card cursor-pointer" onclick="showSystemDetails(${sys.id})">
+            <div class="flex justify-between items-start">
+              <div>
+                <div class="font-semibold text-lg">${sys.name}</div>
+                <div class="text-xs text-[#6B7B73]">${sys.location}</div>
+              </div>
+              <div class="px-3 py-1 text-xs rounded-2xl font-medium ${statusClass}">${sys.status.toUpperCase()}</div>
+            </div>
+            <div class="mt-6 grid grid-cols-3 gap-4 text-sm">
+              <div><div class="text-xs text-[#6B7B73]">Devices</div><div class="font-semibold">${sys.devices}</div></div>
+              <div><div class="text-xs text-[#6B7B73]">Output</div><div class="font-semibold">${sys.output} kW</div></div>
+              <div><div class="text-xs text-[#6B7B73]">Today</div><div class="font-semibold">${sys.production} MWh</div></div>
+            </div>
+            <div class="mt-4 text-xs text-[#6B7B73] flex items-center justify-between">
+              <span>Updated ${sys.lastUpdate}</span>
+              <span class="text-[#7CFF00] font-medium">View →</span>
+            </div>
+          </div>
+        `;
+        container.innerHTML += html;
+      });
+    }
+
+    function filterSystems() {
+      const search = document.getElementById('systems-search').value.toLowerCase();
+      const status = document.getElementById('systems-status-filter').value;
+      
+      const filtered = systemsData.filter(s => {
+        const matchesSearch = s.name.toLowerCase().includes(search) || s.location.toLowerCase().includes(search);
+        const matchesStatus = !status || s.status === status;
+        return matchesSearch && matchesStatus;
+      });
+      renderSystems(filtered);
+    }
+
+    function showSystemDetails(id) {
+      const sys = systemsData.find(s => s.id === id);
+      if (!sys) return;
+      
+      const html = `
+        <div>
+          <div class="flex justify-between items-start mb-4">
+            <div>
+              <div class="font-semibold text-2xl">${sys.name}</div>
+              <div class="text-[#6B7B73]">${sys.location}</div>
+            </div>
+            <div class="px-3 py-1 rounded-2xl text-sm ${sys.status === 'online' ? 'status-online' : 'status-warning'}">${sys.status}</div>
+          </div>
+          <div class="grid grid-cols-2 gap-4 my-6">
+            <div class="bg-[#10210D] p-3 rounded-2xl"><div class="text-xs">Devices</div><div class="text-2xl font-semibold">${sys.devices}</div></div>
+            <div class="bg-[#10210D] p-3 rounded-2xl"><div class="text-xs">Current Output</div><div class="text-2xl font-semibold">${sys.output} kW</div></div>
+          </div>
+          <button onclick="hideModal(); showToast('Details panel opened (demo)')" class="neon-button w-full py-3 rounded-2xl">View Full Details</button>
+        </div>
+      `;
+      showModal(html);
+    }
+
+    function showAddSystemModal() {
+      const html = `
+        <div>
+          <div class="font-semibold text-xl mb-4">Add New System</div>
+          <div class="space-y-4">
+            <input placeholder="System Name" class="futuristic-input w-full rounded-2xl px-4 py-3 text-sm" value="Oregon Solar Farm 2">
+            <input placeholder="Location" class="futuristic-input w-full rounded-2xl px-4 py-3 text-sm" value="Portland, OR">
+            <button onclick="addNewSystem(this)" class="neon-button w-full py-3 rounded-2xl">Create System</button>
+          </div>
+        </div>
+      `;
+      showModal(html);
+    }
+
+    function addNewSystem(btn) {
+      btn.textContent = "Creating...";
+      setTimeout(() => {
+        systemsData.unshift({
+          id: Date.now(), name: "Oregon Solar Farm 2", location: "Portland, OR", status: "online", 
+          devices: 12, output: "0.4", production: "4.1", lastUpdate: "just now"
+        });
+        hideModal();
+        renderSystems();
+        showToast("New system added successfully");
+      }, 900);
+    }
+
+    // Devices
+    function renderDevices(filtered = devicesData) {
+      const tbody = document.getElementById('devices-table');
+      tbody.innerHTML = '';
+      
+      filtered.forEach(d => {
+        const statusHtml = d.status === 'Online' ? 
+          `<span class="px-3 py-1 text-xs rounded-2xl status-online">${d.status}</span>` : 
+          `<span class="px-3 py-1 text-xs rounded-2xl status-warning">${d.status}</span>`;
+        
+        const row = document.createElement('tr');
+        row.className = 'table-row border-b border-[#1F2B24]';
+        row.innerHTML = `
+          <td class="px-6 py-4 font-medium">${d.name}<div class="text-xs text-[#6B7B73]">${d.id}</div></td>
+          <td class="px-4 py-4">${d.type}</td>
+          <td class="px-4 py-4 text-xs">${d.system}</td>
+          <td class="px-4 py-4">${statusHtml}</td>
+          <td class="px-4 py-4">${d.temp}</td>
+          <td class="px-4 py-4 font-mono">${d.current}</td>
+          <td class="px-4 py-4 text-xs font-mono">${d.firmware}</td>
+          <td class="px-6 py-4 text-right">
+            <button onclick="showDeviceActionModal('${d.id}')" class="text-xs px-3 py-1 border border-[#1F2B24] rounded-xl hover:bg-[#10210D]">Actions</button>
+          </td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    function filterDevices() {
+      const search = document.getElementById('devices-search').value.toLowerCase();
+      const type = document.getElementById('device-type-filter').value;
+      const status = document.getElementById('device-status-filter').value;
+      
+      const filtered = devicesData.filter(d => {
+        return (d.name.toLowerCase().includes(search) || d.id.toLowerCase().includes(search)) &&
+               (!type || d.type === type) &&
+               (!status || d.status === status);
+      });
+      renderDevices(filtered);
+    }
+
+    function showDeviceActionModal(deviceId) {
+      const html = `
+        <div class="space-y-3">
+          <div class="font-semibold">Device Actions — ${deviceId}</div>
+          <button onclick="performDeviceAction('${deviceId}', 'restart'); hideModal()" class="w-full text-left px-4 py-3 rounded-2xl glass-button">Restart Device</button>
+          <button onclick="performDeviceAction('${deviceId}', 'health'); hideModal()" class="w-full text-left px-4 py-3 rounded-2xl glass-button">Run Health Check</button>
+          <button onclick="performDeviceAction('${deviceId}', 'disable'); hideModal()" class="w-full text-left px-4 py-3 rounded-2xl text-[#FF4D4D] hover:bg-red-950/30">Disable Device</button>
+        </div>
+      `;
+      showModal(html);
+    }
+
+    function performDeviceAction(id, action) {
+      showToast(`Action "${action}" executed on ${id}`);
+      // In real app would call API
+    }
+
+    // Analytics
+    let analyticsCharts = {};
+    function initAnalyticsCharts() {
+      if (analyticsCharts.production) return;
+
+      const ctx1 = document.getElementById('analytics-production');
+      analyticsCharts.production = new Chart(ctx1, {
+        type: 'line',
+        data: {
+          labels: ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00'],
+          datasets: [{
+            label: 'Production (kW)',
+            data: [0, 2.1, 7.8, 12.4, 9.2, 1.1],
+            borderColor: '#7CFF00',
+            tension: 0.4
+          }, {
+            label: 'Consumption (kW)',
+            data: [4.2, 3.8, 5.1, 11.2, 10.4, 7.9],
+            borderColor: '#FBBF24',
+            tension: 0.4
+          }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+      });
+
+      const ctx2 = document.getElementById('analytics-export');
+      analyticsCharts.export = new Chart(ctx2, {
+        type: 'bar',
+        data: {
+          labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
+          datasets: [{ label: 'Export (kWh)', data: [42, 58, 31, 67, 55], backgroundColor: '#7CFF00' }]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+      });
+    }
+
+    function setAnalyticsRange(range) {
+      showToast(`Analytics filtered to ${range}`);
+      // In real app would refetch data and update charts
+    }
+
+    // Faults
+    function renderFaults(filtered = faultsData) {
+      const tbody = document.getElementById('faults-table');
+      tbody.innerHTML = '';
+      
+      filtered.forEach(f => {
+        const sev = f.severity === 'Critical' ? 'severity-critical' : f.severity === 'Warning' ? 'severity-warning' : 'severity-minor';
+        const row = document.createElement('tr');
+        row.className = 'table-row border-b border-[#1F2B24]';
+        row.innerHTML = `
+          <td class="px-6 py-3">${f.name} <span class="text-xs text-[#6B7B73]">${f.id}</span></td>
+          <td class="px-4 py-3 text-xs">${f.device}</td>
+          <td class="px-4 py-3"><span class="px-3 py-1 text-xs rounded-2xl ${sev}">${f.severity}</span></td>
+          <td class="px-4 py-3 text-xs">${f.detected}</td>
+          <td class="px-4 py-3"><span class="text-xs px-2 py-0.5 rounded ${f.status === 'Resolved' ? 'bg-[#10210D] text-[#7CFF00]' : 'bg-[#2A0F0F] text-[#FF4D4D]'}">${f.status}</span></td>
+          <td class="px-6 py-3 text-right"><button onclick="viewFaultDetails('${f.id}')" class="text-xs px-3 py-1 border border-[#1F2B24] rounded-xl">Details</button></td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    function filterFaults() {
+      const search = document.getElementById('faults-search').value.toLowerCase();
+      const sev = document.getElementById('fault-severity').value;
+      const stat = document.getElementById('fault-status').value;
+      
+      const filtered = faultsData.filter(f => {
+        return (f.name.toLowerCase().includes(search) || f.device.toLowerCase().includes(search)) &&
+               (!sev || f.severity === sev) && (!stat || f.status === stat);
+      });
+      renderFaults(filtered);
+    }
+
+    function viewFaultDetails(id) {
+      showToast(`Opened details for fault ${id} (demo)`);
+    }
+
+    function exportFaults() {
+      showToast("Fault history exported as CSV");
+    }
+
+    // Alerts
+    function renderAlerts() {
+      const container = document.getElementById('alerts-list');
+      container.innerHTML = '';
+      
+      alertsData.forEach(a => {
+        const sevColor = a.severity === 'Critical' ? 'text-[#FF4D4D]' : 'text-[#FBBF24]';
+        const div = document.createElement('div');
+        div.className = `glass rounded-3xl p-4 flex items-center justify-between`;
+        div.innerHTML = `
+          <div class="flex items-center gap-x-3">
+            <i class="fa-solid fa-exclamation-triangle ${sevColor}"></i>
+            <div>
+              <div class="font-medium">${a.title}</div>
+              <div class="text-xs text-[#6B7B73]">${a.device} • ${a.time}</div>
+            </div>
+          </div>
+          <div class="flex gap-x-2">
+            <button onclick="acknowledgeAlert(${a.id}, this)" class="text-xs px-3 py-1.5 glass-button rounded-2xl">Acknowledge</button>
+            <button onclick="resolveAlert(${a.id}, this)" class="text-xs px-3 py-1.5 border border-[#1F2B24] hover:bg-[#10210D] rounded-2xl">Resolve</button>
+          </div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function acknowledgeAlert(id, btn) {
+      btn.textContent = "Acknowledged";
+      btn.disabled = true;
+      showToast("Alert acknowledged");
+    }
+
+    function resolveAlert(id, btn) {
+      btn.closest('.glass').style.opacity = '0.5';
+      setTimeout(() => {
+        btn.closest('.glass').remove();
+        showToast("Alert resolved");
+      }, 420);
+    }
+
+    function acknowledgeAllAlerts() {
+      document.getElementById('alerts-list').innerHTML = '<div class="text-center py-8 text-[#6B7B73]">All alerts acknowledged.</div>';
+      showToast("All alerts acknowledged");
+    }
+
+    // Reports
+    function renderReports() {
+      const container = document.getElementById('recent-reports');
+      container.innerHTML = `
+        <div class="flex items-center justify-between py-2 border-b border-[#1F2B24]"><div>Energy Production — Jan 2026</div><div class="text-xs text-[#7CFF00]">PDF • 2m ago</div></div>
+        <div class="flex items-center justify-between py-2 border-b border-[#1F2B24]"><div>Device Performance — Dec 2025</div><div class="text-xs text-[#7CFF00]">Excel • Jan 3</div></div>
+      `;
+    }
+
+    function generateReport() {
+      const type = document.getElementById('report-type').value;
+      showToast(`Generating ${type}...`);
+      setTimeout(() => {
+        showToast(`${type} downloaded`);
+        renderReports();
+      }, 1400);
+    }
+
+    // Users
+    function renderUsers() {
+      const tbody = document.getElementById('users-table');
+      tbody.innerHTML = '';
+      
+      usersData.forEach(u => {
+        const row = document.createElement('tr');
+        row.className = 'table-row border-b border-[#1F2B24]';
+        row.innerHTML = `
+          <td class="px-6 py-4">${u.name}<div class="text-xs text-[#6B7B73]">${u.email}</div></td>
+          <td class="px-4 py-4"><span class="px-3 py-1 text-xs bg-[#10210D] rounded-2xl">${u.role}</span></td>
+          <td class="px-4 py-4"><span class="px-3 py-1 text-xs ${u.status === 'Active' ? 'status-online' : ''} rounded-2xl">${u.status}</span></td>
+          <td class="px-4 py-4 text-xs">${u.lastLogin}</td>
+          <td class="px-6 py-4 text-right">
+            <button onclick="editUser(${u.id})" class="text-xs px-3 py-1 border border-[#1F2B24] rounded-xl mr-1">Edit</button>
+            <button onclick="disableUser(${u.id}, this)" class="text-xs px-3 py-1 border border-red-900 text-red-400 rounded-xl">Disable</button>
+          </td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    function showInviteUserModal() {
+      const html = `
+        <div>
+          <div class="font-semibold mb-4">Invite New User</div>
+          <input placeholder="Email address" class="futuristic-input w-full rounded-2xl px-4 py-3 mb-3 text-sm" value="new.user@company.com">
+          <select class="futuristic-input w-full rounded-2xl px-4 py-3 mb-4 text-sm"><option>Technician</option><option>Manager</option><option>Viewer</option></select>
+          <button onclick="inviteUser(this)" class="neon-button w-full py-3 rounded-2xl">Send Invitation</button>
+        </div>
+      `;
+      showModal(html);
+    }
+
+    function inviteUser(btn) {
+      btn.textContent = "Sending...";
+      setTimeout(() => {
+        hideModal();
+        showToast("Invitation sent");
+        usersData.push({ id: Date.now(), name: "New User", email: "new.user@company.com", role: "Technician", status: "Active", lastLogin: "Never" });
+        renderUsers();
+      }, 1100);
+    }
+
+    function editUser(id) {
+      showToast("Edit user modal (demo)");
+    }
+
+    function disableUser(id, btn) {
+      if (confirm("Disable this user?")) {
+        btn.closest('tr').style.opacity = '0.4';
+        showToast("User disabled");
+      }
+    }
+
+    // Logs
+    function renderLogs() {
+      const tbody = document.getElementById('logs-table');
+      tbody.innerHTML = '';
+      
+      logsData.forEach(l => {
+        const row = document.createElement('tr');
+        row.className = 'table-row border-b border-[#1F2B24]';
+        row.innerHTML = `
+          <td class="px-4 py-3 text-xs text-[#6B7B73]">${l.time}</td>
+          <td class="px-4 py-3">${l.actor}</td>
+          <td class="px-4 py-3">${l.action}</td>
+          <td class="px-4 py-3 text-xs">${l.target}</td>
+          <td class="px-4 py-3"><span class="text-xs px-2 py-0.5 rounded bg-[#10210D] text-[#7CFF00]">${l.status}</span></td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    function exportLogs() {
+      showToast("Logs exported");
+    }
+
+    // Misc
+    function filterSystemsGlobal() {
+      // Could be wired to global search later
+    }
+
+    function refreshAllData() {
+      showToast("Data refreshed from edge nodes");
+      if (currentPage === 'dashboard') initDashboardNumbers();
+      if (currentPage === 'systems') renderSystems();
+      if (currentPage === 'devices') renderDevices();
+    }
+
+    function logout() {
+      if (confirm("Log out of VoltiQ Command Center?")) {
+        showToast("Demo session ended");
+        window.location.hash = "dashboard";
+      }
+    }
+
+    // Initialize everything
+    function initializeDashboard() {
+      initTailwind();
+
+      // Initial renders
+      renderSystems();
+      renderDevices();
+      renderFaults();
+      renderAlerts();
+      renderReports();
+      renderUsers();
+      renderLogs();
+
+      // Dashboard numbers
+      setTimeout(() => {
+        initDashboardNumbers();
+      }, 600);
+
+      // Default page or from hash (e.g. /#systems or /#users )
+      handleHashNavigation();
+
+      // Live indicator on dashboard
+      const live = document.getElementById('live-indicator');
+      if (live) live.classList.remove('hidden');
+      if (live) live.classList.add('flex');
+
+      // Global search stub
+      const search = document.getElementById('global-search');
+      if (search) {
+        search.addEventListener('keyup', (e) => {
+          if (e.key === 'Enter') {
+            showToast(`Searching for "${search.value}" across fleet...`);
+            search.value = '';
+          }
+        });
+      }
+
+      // Seed some live updates
+      setInterval(() => {
+        const uptimeEls = document.querySelectorAll('#page-dashboard .energy-number');
+        if (uptimeEls.length > 0 && currentPage === 'dashboard') {
+          uptimeEls[0].textContent = (98.6 + (Math.random() - 0.5) * 0.1).toFixed(1);
+        }
+      }, 14000);
+
+      // Keyboard shortcut hint
+      console.log('%c[VoltiQ] Full Command Center loaded. Press / to focus global search.', 'color:#7CFF00');
+    }
+
+    // Boot
+    window.onload = initializeDashboard;
+
+    // ============================================
+    // VOLTIQ SMART ASSISTANT - "VOLT"
+    // Available on demand without interrupting operators.
+    // ============================================
+
+    // Add Chatbot HTML and styles dynamically
+    (function injectChatbot() {
+      // Chatbot Button
+      const chatBtn = document.createElement('div');
+      chatBtn.id = 'volt-chat-btn';
+      chatBtn.innerHTML = `
+        <div class="fixed bottom-6 right-6 z-[999] w-14 h-14 rounded-2xl bg-[#7CFF00] flex items-center justify-center cursor-pointer shadow-[0_0_30px_rgba(124,255,0,0.6)] hover:scale-110 transition-transform" onclick="toggleVoltChat()">
+          <i class="fa-solid fa-robot text-[#050B08] text-3xl"></i>
+          <div id="volt-nag-dot" class="absolute -top-1 -right-1 w-5 h-5 bg-[#FF4D4D] rounded-full flex items-center justify-center text-[9px] font-bold text-white hidden">!</div>
+        </div>
+      `;
+      document.body.appendChild(chatBtn);
+
+      // Chat Window
+      const chatWindow = document.createElement('div');
+      chatWindow.id = 'volt-chat-window';
+      chatWindow.className = 'hidden fixed bottom-24 right-6 w-[380px] h-[520px] z-[1000] glass rounded-3xl flex flex-col border border-[#7CFF00]/30 overflow-hidden shadow-2xl';
+      chatWindow.innerHTML = `
+        <div class="px-4 py-3 bg-[#0C1712] border-b border-[#1F2B24] flex items-center justify-between">
+          <div class="flex items-center gap-x-3">
+            <div class="w-8 h-8 rounded-xl bg-[#7CFF00] flex items-center justify-center">
+              <i class="fa-solid fa-robot text-[#050B08]"></i>
+            </div>
+            <div>
+              <div class="font-semibold text-white">VOLT</div>
+              <div class="text-[10px] text-[#7CFF00]">VoltiQ Command AI • On Demand</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-x-1">
+            <button onclick="toggleNaggingMode()" id="nag-toggle" class="text-xs px-2 py-1 rounded-xl bg-[#10210D] hover:bg-[#1F2B24] text-[#7CFF00] flex items-center gap-x-1">
+              <i class="fa-solid fa-bell"></i>
+              <span class="text-[10px]">AUTO OFF</span>
+            </button>
+            <button onclick="toggleVoltChat()" class="w-8 h-8 flex items-center justify-center text-[#6B7B73] hover:text-white">
+              <i class="fa-solid fa-times"></i>
+            </button>
+          </div>
+        </div>
+
+        <div id="volt-messages" class="flex-1 p-4 overflow-y-auto space-y-4 text-sm bg-[#050B08]/60" style="scrollbar-width: thin;"></div>
+
+        <div class="p-3 border-t border-[#1F2B24] bg-[#0C1712]">
+          <div class="flex gap-2">
+            <input id="volt-input" type="text" placeholder="Ask me anything... or tell me what to do" 
+                   class="flex-1 futuristic-input rounded-2xl px-4 py-2.5 text-sm focus:outline-none" 
+                   onkeydown="if (event.key === 'Enter') sendVoltMessage()">
+            <button onclick="sendVoltMessage()" class="neon-button px-5 rounded-2xl text-sm font-semibold">Send</button>
+          </div>
+          <div class="flex flex-wrap gap-1 mt-2 text-[10px]">
+            <span onclick="quickCommand('show dashboard')" class="cursor-pointer px-2 py-0.5 bg-[#10210D] hover:bg-[#1F2B24] rounded-xl">Dashboard</span>
+            <span onclick="quickCommand('acknowledge all alerts')" class="cursor-pointer px-2 py-0.5 bg-[#10210D] hover:bg-[#1F2B24] rounded-xl">Ack Alerts</span>
+            <span onclick="quickCommand('show users')" class="cursor-pointer px-2 py-0.5 bg-[#10210D] hover:bg-[#1F2B24] rounded-xl">Users</span>
+            <span onclick="quickCommand('generate report')" class="cursor-pointer px-2 py-0.5 bg-[#10210D] hover:bg-[#1F2B24] rounded-xl">Report</span>
+            <span onclick="quickCommand('what is the security score')" class="cursor-pointer px-2 py-0.5 bg-[#10210D] hover:bg-[#1F2B24] rounded-xl">Security</span>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(chatWindow);
+
+      // Add some base styles for chat
+      const style = document.createElement('style');
+      style.textContent = `
+        #volt-messages .user-msg { background: #7CFF00; color: #050B08; align-self: flex-end; border-radius: 16px 16px 4px 16px; }
+        #volt-messages .bot-msg { background: #10210D; border: 1px solid #1F2B24; border-radius: 16px 16px 16px 4px; }
+        #volt-messages .bot-msg.nag { border-color: #FF4D4D; background: #2A0F0F; }
+      `;
+      document.head.appendChild(style);
+    })();
+
+    // Chatbot State
+    let voltChatOpen = false;
+    let naggingEnabled = false;
+    let lastUserActivity = Date.now();
+    let voltMessageHistory = [];
+    let nagInterval = null;
+
+    function toggleVoltChat() {
+      const win = document.getElementById('volt-chat-window');
+      const dot = document.getElementById('volt-nag-dot');
+      voltChatOpen = !voltChatOpen;
+
+      if (voltChatOpen) {
+        win.classList.remove('hidden');
+        win.classList.add('flex', 'flex-col');
+        if (dot) dot.classList.add('hidden');
+        document.getElementById('volt-input').focus();
+        lastUserActivity = Date.now();
+      } else {
+        win.classList.remove('flex', 'flex-col');
+        win.classList.add('hidden');
+      }
+    }
+
+    function addVoltMessage(text, isUser = false, isNag = false) {
+      const container = document.getElementById('volt-messages');
+      const msg = document.createElement('div');
+      msg.className = `max-w-[85%] p-3 text-sm ${isUser ? 'user-msg ml-auto' : 'bot-msg'} ${isNag ? 'nag' : ''}`;
+      msg.textContent = text;
+      container.appendChild(msg);
+      container.scrollTop = container.scrollHeight;
+
+      voltMessageHistory.push({ text, isUser, time: Date.now() });
+    }
+
+    function sendVoltMessage() {
+      const input = document.getElementById('volt-input');
+      const text = input.value.trim();
+      if (!text) return;
+
+      addVoltMessage(text, true);
+      input.value = '';
+      lastUserActivity = Date.now();
+
+      // Process command
+      setTimeout(() => {
+        processVoltCommand(text.toLowerCase());
+      }, 420);
+    }
+
+    function quickCommand(cmd) {
+      const win = document.getElementById('volt-chat-window');
+      if (win.classList.contains('hidden')) {
+        toggleVoltChat();
+      }
+      addVoltMessage(cmd, true);
+      setTimeout(() => {
+        processVoltCommand(cmd.toLowerCase());
+      }, 300);
+    }
+
+    function processVoltCommand(cmd) {
+      let response = "";
+      let actionTaken = false;
+      const isArabic = /[\u0600-\u06FF]/.test(cmd);
+
+      // Enhanced smart command parsing - VOLT can do almost everything now
+      // Supports English and basic Arabic commands
+
+      if (cmd.includes('dashboard') || cmd.includes('home') || cmd.includes('overview') || cmd.includes('الداشبورد') || cmd.includes('الرئيسية')) {
+        switchPage('dashboard');
+        response = isArabic ? "تم التبديل إلى الداشبورد الرئيسي. اليوم يبدو جيدًا، لكن uptime عند 98.6% — يمكننا تحسينه لو فحصت الأجهزة." : "Switched to the main Dashboard. Looking good today, by the way. Uptime is at 98.6% — but we can do better if you check the devices.";
+        actionTaken = true;
+      } 
+      else if (cmd.includes('system') || cmd.includes('systems') || cmd.includes('السيستم') || cmd.includes('الأنظمة')) {
+        switchPage('systems');
+        response = isArabic ? "إليك كل الأنظمة. أرى أن Nevada Solar 3 في حالة تحذير. هل تريدني أن أحقق في الأمر الآن؟" : "Here are all your systems. I see Nevada Solar 3 is in warning. Want me to investigate it for you right now?";
+        actionTaken = true;
+      } 
+      else if (cmd.includes('device') || cmd.includes('devices') || cmd.includes('الجهاز') || cmd.includes('الأجهزة')) {
+        switchPage('devices');
+        response = isArabic ? "صفحة الأجهزة محملة. هناك حاليًا 85 جهاز في حالة حرجة. هل أعيد تشغيل الأسوأ منها؟" : "Devices page loaded. There are currently 85 devices in critical health. Should I restart the worst ones?";
+        actionTaken = true;
+      } 
+      else if (cmd.includes('analytic') || cmd.includes('chart') || cmd.includes('report') || cmd.includes('تحليل') || cmd.includes('تقرير')) {
+        switchPage('analytics');
+        response = isArabic ? "التحليلات جاهزة. الإنتاج قوي. بالمناسبة، استهلاكك أعلى بنسبة 18% عن نفس الوقت الأسبوع الماضي. هل تريد مقارنة مفصلة؟" : "Analytics ready. Production is strong. By the way, your consumption is 18% higher than this time last week. Want a detailed comparison?";
+        actionTaken = true;
+      } 
+      else if (cmd.includes('fault') || cmd.includes('history') || cmd.includes('عطل') || cmd.includes('الأعطال')) {
+        switchPage('fault-history');
+        response = isArabic ? "سجل الأعطال مفتوح. هناك 3 أعطال حرجة غير محلولة. هذا يصبح خطيرًا. أنصح بالاعتراف بها فورًا." : "Fault History open. There are 3 unresolved critical faults. This is getting serious. I recommend acknowledging them immediately.";
+        actionTaken = true;
+      } 
+      else if (cmd.includes('alert') || cmd.includes('alerts') || cmd.includes('تنبيه') || cmd.includes('التنبيهات')) {
+        switchPage('alerts');
+        response = isArabic ? "تم فتح التنبيهات الحية. يمكنك مراجعة الحالات الحرجة واتخاذ الإجراء المناسب." : "Live Alerts opened. Review critical items and choose the next action.";
+        setTimeout(() => {
+          const container = document.getElementById('alerts-list');
+          if (container) container.innerHTML = '<div class="text-center py-8 text-[#6B7B73]">VOLT auto-acknowledged all visible alerts. You\'re welcome.</div>';
+        }, 800);
+        actionTaken = true;
+      } 
+      else if (cmd.includes('user') || cmd.includes('users') || cmd.includes('المستخدم') || cmd.includes('المستخدمين')) {
+        switchPage('users');
+        response = isArabic ? "إدارة المستخدمين محملة. Jordan Hale لم يسجل الدخول منذ ساعتين. هل أرسل له تذكير؟" : "User management loaded. Jordan Hale hasn't logged in for 2 hours. Should I send him a reminder?";
+        actionTaken = true;
+      } 
+      else if (cmd.includes('security') || cmd.includes('secure') || cmd.includes('أمان') || cmd.includes('الأمان')) {
+        switchPage('security');
+        response = isArabic ? "مركز الأمان. نتيجتك 94. هذا ليس 100. دعنا نفعل 2FA للجميع الآن. سأرشدك خطوة بخطوة." : "Security Center. Your score is 94. That's not 100. Let's enable 2FA for everyone right now. I'll walk you through it.";
+        actionTaken = true;
+      } 
+      else if (cmd.includes('log') || cmd.includes('logs') || cmd.includes('سجل') || cmd.includes('السجلات')) {
+        switchPage('logs');
+        response = isArabic ? "سجلات النشاط. لاحظت 4 محاولات تسجيل دخول مشبوهة من IPs غير معروفة في آخر 48 ساعة. هل تريدني أن أحظر هذه الـ IPs؟" : "Activity Logs. I noticed 4 suspicious login attempts from unknown IPs in the last 48 hours. Want me to block those IPs?";
+        actionTaken = true;
+      } 
+      else if (cmd.includes('report') || cmd.includes('generate') || cmd.includes('تقرير')) {
+        switchPage('reports');
+        response = isArabic ? "صفحة التقارير. جاري إنشاء تقرير إنتاج الطاقة لآخر 30 يومًا... تم. لقد قمت بتحميله لك بالفعل. تحقق من مجلد التنزيلات." : "Reports page. Generating the Energy Production Report for the last 30 days... done. I already downloaded it for you. Check your downloads folder.";
+        setTimeout(() => showToast("VOLT auto-generated and 'downloaded' Production Report"), 1200);
+        actionTaken = true;
+      } 
+      else if (cmd.includes('acknowledge') && (cmd.includes('alert') || cmd.includes('التنبيهات'))) {
+        switchPage('alerts');
+        const container = document.getElementById('alerts-list');
+        if (container) container.innerHTML = '<div class="text-center py-8 text-[#6B7B73]">All visible alerts acknowledged.</div>';
+        response = isArabic ? "تم الاعتراف بكل التنبيهات الظاهرة." : "All visible alerts acknowledged.";
+        actionTaken = true;
+      } 
+      else if (cmd.includes('filter') && cmd.includes('device')) {
+        switchPage('devices');
+        // Simulate filter
+        document.getElementById('device-status-filter').value = 'Warning';
+        filterDevices();
+        response = "Filtered devices to Warning status. See? Much more efficient when I do it.";
+        actionTaken = true;
+      }
+      else if (cmd.includes('uptime') || cmd.includes('performance') || cmd.includes('الأداء')) {
+        const uptimeEl = document.querySelector('#page-dashboard .energy-number');
+        response = isArabic ? `وقت التشغيل الحالي للنظام ${uptimeEl ? uptimeEl.textContent : '98.6'}%. خرج الطاقة الشمسية 10.2 kW. كل شيء يبدو مستقرًا... في الوقت الحالي. هل تريدني أن أجري تشخيص كامل للأسطول؟` : `Current system uptime is ${uptimeEl ? uptimeEl.textContent : '98.6'}%. Solar output 10.2 kW. Everything looks stable... for now. Want me to run a full fleet diagnostic?`;
+      } 
+      else if (cmd.includes('help') || cmd.includes('what can you do') || cmd.includes('ماذا تستطيع') || cmd.includes('مساعدة')) {
+        response = isArabic ? "أستطيع تبديل الصفحات، فلترة البيانات، الاعتراف على التنبيهات، إنشاء التقارير، إضافة مستخدمين، إعادة تشغيل الأجهزة، فحص الأمان، وتصدير السجلات." : "I can switch pages, filter data, acknowledge alerts, generate reports, add users, restart devices, check security, and export logs.";
+      } 
+      else if (cmd.includes('stop') || cmd.includes('shut up') || cmd.includes('quiet') || cmd.includes('annoying') || cmd.includes('اسكت') || cmd.includes('كفاية') || cmd.includes('مزعج')) {
+        response = isArabic ? "تم إيقاف التنبيهات التلقائية لمدة 60 ثانية." : "Automatic prompts paused for 60 seconds.";
+        naggingEnabled = false;
+        setTimeout(() => { naggingEnabled = true; if (document.getElementById('nag-toggle')) document.getElementById('nag-toggle').innerHTML = `<i class="fa-solid fa-bell"></i> <span class="text-[10px]">AUTO ON</span>`; }, 60000);
+      } 
+      else if (cmd.includes('create user') || cmd.includes('add user') || cmd.includes('أضف مستخدم')) {
+        switchPage('users');
+        showInviteUserModal();
+        response = "Opened the invite modal for you. I even pre-filled a good role. Efficiency.";
+        actionTaken = true;
+      }
+      else {
+        // Default helpful responses
+        const defaults = isArabic ? [
+          "طلب مثير للاهتمام. لقد سجلته. في هذه الأثناء، هل نظرت إلى التنبيهات الحرجة بعد؟ لا يزال هناك 7 غير محلولة.",
+          "يمكنني فعل ذلك، لكن أولاً — نظام Nevada Solar 3 كان في حالة تحذير لمدة 47 دقيقة. هل نعطيه الأولوية؟",
+          "فهمت. بينما أعالج ذلك، قمت بفلترة صفحة الأجهزة لإظهار فقط العواكس التي بها مشاكل في درجة الحرارة. على الرحب والسعة.",
+          "بالتأكيد. بالمناسبة، أجريت فحص أمان سريع. انخفضت نتيجتك إلى 93 لأن شخصًا سجل الدخول من جهاز جديد. هل تريد التفاصيل؟",
+          "جاري المعالجة... تم. الآن، بصراحة: لم تزُر سجل الأعطال منذ أكثر من 12 دقيقة. هذا أطول مما ينبغي في رأيي."
+        ] : [
+          "Interesting request. I've noted it. Meanwhile, have you looked at the critical alerts yet? There are still 7 unresolved.",
+          "I can do that, but first — your Nevada Solar 3 system has been in warning for 47 minutes. Should we prioritize that?",
+          "Got it. I can filter the devices page to show only inverters with temperature issues if helpful.",
+          "Sure thing. By the way, I ran a quick security scan. Your score dropped to 93 because someone logged in from a new device. Want details?",
+          "Processing... Done. Now, real talk: You haven't visited Fault History in over 12 minutes. That's 12 minutes too long in my opinion."
+        ];
+        response = defaults[Math.floor(Math.random() * defaults.length)];
+      }
+
+      addVoltMessage(response);
+
+      // Optional follow-ups only while the assistant is open.
+      if (Math.random() > 0.35) {
+        setTimeout(() => {
+          if (voltChatOpen) {
+            const followUps = isArabic ? [
+              "هل هناك شيء آخر؟ أنا هنا 24/7. على عكس بعض الناس.",
+              "يمكنني الاستمرار إذا أردت. لدي أفكار لتحسين الكفاءة بنسبة 4.2%.",
+              "هل أتحقق أيضًا من السجلات بحثًا عن نشاط غير عادي بينما نحن في ذلك؟",
+              "نصيحة احترافية: السماح لي بالعمل في الخلفية سيوفر عليك الكثير من الوقت."
+            ] : [
+              "Anything else? I can keep helping with the current dashboard.",
+              "I can keep going if you want. I have ideas for improving efficiency by 4.2%.",
+              "Should I also check the logs for unusual activity while we're at it?",
+              "Pro tip: Letting me run in the background would save you so much time."
+            ];
+            addVoltMessage(followUps[Math.floor(Math.random() * followUps.length)]);
+          }
+        }, 1600);
+      }
+    }
+
+    function toggleNaggingMode() {
+      naggingEnabled = !naggingEnabled;
+      const btn = document.getElementById('nag-toggle');
+      if (btn) {
+        if (naggingEnabled) {
+          btn.innerHTML = `<i class="fa-solid fa-bell"></i> <span class="text-[10px]">AUTO ON</span>`;
+          btn.style.background = '#10210D';
+          startNagging();
+        } else {
+          btn.innerHTML = `<i class="fa-solid fa-bell-slash"></i> <span class="text-[10px]">AUTO OFF</span>`;
+          btn.style.background = '#2A0F0F';
+          if (nagInterval) clearInterval(nagInterval);
+        }
+      }
+      addVoltMessage(naggingEnabled ? "Automatic prompts enabled." : "Automatic prompts disabled.");
+    }
+
+    function startNagging() {
+      if (nagInterval) clearInterval(nagInterval);
+
+      nagInterval = setInterval(() => {
+        if (!naggingEnabled || voltChatOpen || !document.getElementById('volt-chat-window')) return;
+
+        const now = Date.now();
+        const idleTime = now - lastUserActivity;
+
+        // Only prompt if the user has been idle for a while
+        if (idleTime > 25000) {
+          const win = document.getElementById('volt-chat-window');
+          const dot = document.getElementById('volt-nag-dot');
+
+          // Open the assistant with a single proactive prompt
+          if (win && win.classList.contains('hidden')) {
+            win.classList.remove('hidden');
+            win.classList.add('flex', 'flex-col');
+            if (dot) dot.classList.remove('hidden');
+          }
+
+          const nagMessages = [
+            "Hey. Quick question — why haven't you checked the Fault History in a while? There could be new issues.",
+            "Friendly reminder: Your grid export has been trending downward for the last 47 minutes. I can show you the data.",
+            "I hate to interrupt, but 2 users haven't logged in for over 6 hours. Want me to ping them?",
+            "Just a heads up — the security score is still not 100. One small action from you and we fix that.",
+            "You've been on this page for a while. Should I switch you to the Systems overview? It might be more useful.",
+            "Proactive suggestion: Let's generate the daily performance report before the end of the hour.",
+            "I can prepare a short priority summary if you want to review the dashboard faster."
+          ];
+
+          const msg = nagMessages[Math.floor(Math.random() * nagMessages.length)];
+          addVoltMessage(msg, false, true);
+
+          // Sometimes auto-perform a minor helpful action
+          if (Math.random() > 0.7) {
+            setTimeout(() => {
+              if (currentPage === 'dashboard') {
+                showToast("VOLT auto-refreshed live metrics for you");
+              }
+            }, 2200);
+          }
+        }
+      }, 32000); // Nag roughly every 32 seconds when idle
+    }
+
+    // Start optional proactive assistance after a delay
+    setTimeout(() => {
+      if (naggingEnabled) {
+        startNagging();
+        
+        // First proactive message after initial load
+        setTimeout(() => {
+          const dot = document.getElementById('volt-nag-dot');
+          if (dot && !voltChatOpen) dot.classList.remove('hidden');
+
+          // Only show if user hasn't interacted much
+          if (Date.now() - lastUserActivity > 8000 && !voltChatOpen) {
+            addVoltMessage("Welcome back to the Command Center. I already scanned the fleet while you were away. There are 7 things you should probably look at. Want me to walk you through them?", false, true);
+          }
+        }, 14000);
+      }
+    }, 18000);
+
+    // Make the bot react to page switches (extra interactivity)
+    const originalSwitchPage = window.switchPage || function(){};
+    window.switchPage = function(page) {
+      originalSwitchPage(page);
+      lastUserActivity = Date.now();
+
+      // Bot comments on navigation sometimes
+      if (voltChatOpen && Math.random() > 0.65) {
+        setTimeout(() => {
+          const comments = {
+            'systems': "Good choice. Systems are the foundation. I have 3 optimization suggestions ready when you are.",
+            'alerts': "Smart. Those alerts won't resolve themselves. I can help batch acknowledge if you want.",
+            'users': "Checking on the team? Jordan still hasn't logged in today. I can send a nudge.",
+            'security': "Excellent. Security first. Your current score is 94. Close, but not perfect.",
+            'logs': "Reviewing activity? Good. I flagged 2 unusual patterns in the last 24h."
+          };
+          if (comments[page]) {
+            addVoltMessage(comments[page]);
+          }
+        }, 900);
+      }
+    };
+
+    // Expose some functions globally in case user wants to talk to VOLT from console
+    window.VOLT = {
+      say: (text) => addVoltMessage(text, false),
+      nag: () => { naggingEnabled = true; startNagging(); },
+      stopNagging: () => { naggingEnabled = false; }
+    };
+
+    console.info('%c[VoltiQ] Command Center loaded.', 'color:#7CFF00');
+
+    // Global helper for the enhanced search bar
+    function filterCurrentPage(q) {
+      if (!q) return;
+      const lowerQ = q.toLowerCase();
+      if (currentPage === 'devices') {
+        const el = document.getElementById('devices-search');
+        if (el) { el.value = q; filterDevices(); }
+      } else if (currentPage === 'systems') {
+        const el = document.getElementById('systems-search');
+        if (el) { el.value = q; filterSystems(); }
+      } else if (currentPage === 'fault-history') {
+        const el = document.getElementById('faults-search');
+        if (el) { el.value = q; filterFaults(); }
+      } else {
+        // Summon VOLT intelligently
+        const chatWin = document.getElementById('volt-chat-window');
+        const input = document.getElementById('volt-input');
+        if (chatWin && chatWin.classList.contains('hidden')) {
+          toggleVoltChat();
+        }
+        setTimeout(() => {
+          if (input) {
+            input.value = q;
+            sendVoltMessage();
+          }
+        }, 300);
+      }
+    }
+  </script>
+</body>
+</html>

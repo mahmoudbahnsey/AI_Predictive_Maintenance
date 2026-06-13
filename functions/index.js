@@ -1,0 +1,114 @@
+const { onRequest } = require("firebase-functions/v2/https");
+const logger = require("firebase-functions/logger");
+
+exports.askWattson = onRequest({ cors: true }, async (req, res) => {
+  if (req.method !== "POST") {
+    res.status(405).send("Method Not Allowed");
+    return;
+  }
+
+  const { message, history, currentPath, pageContext, selectedItem, dashboardData, userRole, mode } = req.body;
+
+  if (!message) {
+    res.status(400).send("Bad Request: Missing message");
+    return;
+  }
+
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    logger.error("GEMINI_API_KEY environment variable is not configured on the backend!");
+    res.status(500).send("Internal Server Error: Gemini API Key is missing on the server.");
+    return;
+  }
+
+  // Choose system instruction tone/focus based on active conversation mode
+  let modeInstruction = "";
+  if (mode === "analyze") {
+    modeInstruction = "Focus on analyzing data trends, solar metrics, and identifying performance insights.";
+  } else if (mode === "diagnose") {
+    modeInstruction = "Focus on diagnosing inverter faults, F0-F7 classes, warning signals, and mechanical issues.";
+  } else if (mode === "summarize") {
+    modeInstruction = "Focus on writing extremely concise summaries, status updates, and briefings.";
+  } else if (mode === "report") {
+    modeInstruction = "Focus on preparing summaries suitable for executive reporting or outlining maintenance reports.";
+  } else if (mode === "troubleshoot") {
+    modeInstruction = "Focus on step-by-step guidance, recommendations, and actionable troubleshooting steps.";
+  } else {
+    modeInstruction = "Focus on answering user general questions in a helpful, conversational, and direct manner.";
+  }
+
+  const systemInstruction = 
+    `You are Wattson, the VoltIQ AI Energy Assistant and Smart Solar Intelligence Assistant. ` +
+    `VoltIQ monitors distributed industrial solar inverter fleets. ` +
+    `Personality: Sarcastic, cynical, extremely competent, witty, precise. You have little patience for simple user errors but are deeply dedicated to solar grid efficiency. ` +
+    `Current page context in the app: ${currentPath || "dashboard"}. ` +
+    `Conversation Mode: ${mode || "ask"} (${modeInstruction}). ` +
+    `User Role: ${userRole || "User"}. ` +
+    (pageContext ? `Current Page Context Data: ${JSON.stringify(pageContext)}. ` : '') +
+    (selectedItem ? `Selected Item Data: ${JSON.stringify(selectedItem)}. ` : '') +
+    (dashboardData ? `Dashboard Performance Data: ${JSON.stringify(dashboardData)}. ` : '') +
+    `Constraints: ` +
+    `1. Keep responses very short, precise, and professional (under 120 words). ` +
+    `2. Respond in the same language the user writes in (English or Arabic). ` +
+    `3. Be wittily playful and slightly sarcastic (lightly teasing), but never rude, childish, or insulting. ` +
+    `4. If the query is unrelated to solar energy, power systems, inverters, dashboard navigation, or your personality, redirect them playfully. ` +
+    `5. Do not hallucinate data. If data is missing or unavailable, say that it's unavailable and suggest where to check.`;
+
+  // Format conversational history for Gemini API (max last 6 messages)
+  const contents = [];
+  if (Array.isArray(history)) {
+    history.slice(-6).forEach(msg => {
+      contents.push({
+        role: msg.isBot ? "model" : "user",
+        parts: [{ text: msg.text }]
+      });
+    });
+  }
+
+  // Append current user message
+  contents.push({
+    role: "user",
+    parts: [{ text: message }]
+  });
+
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+
+  const payload = {
+    contents,
+    systemInstruction: {
+      parts: [{ text: systemInstruction }]
+    },
+    generationConfig: {
+      temperature: 0.7,
+      maxOutputTokens: 250
+    }
+  };
+
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      logger.error("Gemini API error response:", errText);
+      res.status(response.status).send(`Gemini API Error: ${response.statusText}`);
+      return;
+    }
+
+    const data = await response.json();
+    const textResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (textResponse) {
+      res.json({ response: textResponse.trim() });
+    } else {
+      res.status(500).send("Gemini API returned an invalid response structure.");
+    }
+  } catch (error) {
+    logger.error("Server exception calling Gemini API:", error);
+    res.status(500).send("Internal Server Error calling Gemini API.");
+  }
+});

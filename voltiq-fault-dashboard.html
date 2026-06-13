@@ -1,0 +1,1923 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VoltiQ • Inverter Monitoring & Fleet Dashboard</title>
+
+  <!-- VoltiQ Lightning Logo Favicon -->
+  <link rel="icon" href="/favicon.ico" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Outfit & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <!-- Chart.js CDN for main charts -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Firebase Compatibility SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            cyber: {
+              bg: '#050A08',
+              card: 'rgba(11, 21, 16, 0.75)',
+              border: 'rgba(38, 70, 52, 0.4)',
+              green: '#7CFF00',
+              greenGlow: 'rgba(124, 255, 0, 0.25)',
+              red: '#FF3B30',
+              redGlow: 'rgba(255, 59, 48, 0.3)',
+              muted: '#7E9185'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      font-family: 'Inter', 'Outfit', sans-serif;
+      background-color: #050A08;
+      background-image: 
+        radial-gradient(circle at 15% 15%, rgba(14, 33, 22, 0.4) 0%, transparent 40%),
+        radial-gradient(circle at 85% 85%, rgba(10, 24, 17, 0.3) 0%, transparent 50%);
+    }
+
+    .glass-panel {
+      background: rgba(11, 21, 16, 0.7);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(38, 70, 52, 0.4);
+    }
+
+    .active-nav-link {
+      color: #7CFF00;
+      background: rgba(124, 255, 0, 0.08);
+      border-left: 3px solid #7CFF00;
+    }
+
+    .digital-nums {
+      font-family: 'Outfit', sans-serif;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Circular Progress Animation */
+    .progress-ring-circle {
+      transition: stroke-dashoffset 0.5s ease;
+      transform: rotate(-90deg);
+      transform-origin: 50% 50%;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: rgba(11, 21, 16, 0.5); }
+    ::-webkit-scrollbar-thumb { background: rgba(124, 255, 0, 0.2); border-radius: 99px; }
+    ::-webkit-scrollbar-thumb:hover { background: #7CFF00; }
+
+    @keyframes pulse-neon {
+      0% { box-shadow: 0 0 15px 0 rgba(124, 255, 0, 0.15); border-color: rgba(38, 70, 52, 0.4); }
+      100% { box-shadow: 0 0 25px 4px rgba(124, 255, 0, 0.35); border-color: rgba(124, 255, 0, 0.6); }
+    }
+    .neon-pulse-green { animation: pulse-neon 2.5s infinite alternate; }
+
+    .cyber-grid {
+      background-image: 
+        linear-gradient(rgba(38, 70, 52, 0.08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(38, 70, 52, 0.08) 1px, transparent 1px);
+      background-size: 24px 24px;
+      animation: grid-move 8s linear infinite;
+    }
+    @keyframes grid-move {
+      0% { background-position: 0 0; }
+      100% { background-position: 24px 24px; }
+    }
+
+    @keyframes scan-line {
+      0% { transform: translateY(0); opacity: 0; }
+      10% { opacity: 1; }
+      90% { opacity: 1; }
+      100% { transform: translateY(220px); opacity: 0; }
+    }
+    .animate-scan-line { animation: scan-line 4s linear infinite; }
+
+    @keyframes glow-float-1 {
+      0% { transform: translate(0, 0) scale(1); }
+      50% { transform: translate(40px, -20px) scale(1.15); }
+      100% { transform: translate(0, 0) scale(1); }
+    }
+    @keyframes glow-float-2 {
+      0% { transform: translate(0, 0) scale(1); }
+      50% { transform: translate(-30px, 40px) scale(0.9); }
+      100% { transform: translate(0, 0) scale(1); }
+    }
+    @keyframes glow-float-3 {
+      0% { transform: translate(0, 0) scale(1); }
+      50% { transform: translate(20px, 30px) scale(1.1); }
+      100% { transform: translate(0, 0) scale(1); }
+    }
+    .animate-glow-float-1 { animation: glow-float-1 14s ease-in-out infinite; }
+    .animate-glow-float-2 { animation: glow-float-2 18s ease-in-out infinite; }
+    .animate-glow-float-3 { animation: glow-float-3 15s ease-in-out infinite-reverse; }
+
+    /* â”€â”€ Premium Auth Inputs â”€â”€ */
+    .auth-input {
+      width: 100%;
+      background: rgba(8, 14, 11, 0.85);
+      border: 1.5px solid rgba(38, 70, 52, 0.55);
+      border-radius: 14px;
+      padding: 15px 18px 15px 50px;
+      font-size: 15px;
+      color: #fff;
+      font-family: 'Inter', sans-serif;
+      transition: all 0.25s ease;
+      outline: none;
+      box-sizing: border-box;
+    }
+    .auth-input::placeholder { color: rgba(126, 145, 133, 0.45); font-size: 14px; }
+    .auth-input:focus {
+      border-color: #7CFF00;
+      box-shadow: 0 0 0 3px rgba(124, 255, 0, 0.1), 0 0 24px rgba(124, 255, 0, 0.06);
+      background: rgba(10, 18, 14, 0.97);
+    }
+    .auth-select {
+      width: 100%;
+      background: rgba(8, 14, 11, 0.85);
+      border: 1.5px solid rgba(38, 70, 52, 0.55);
+      border-radius: 14px;
+      padding: 15px 36px 15px 14px;
+      font-size: 14px;
+      color: #fff;
+      font-family: 'Inter', sans-serif;
+      outline: none;
+      appearance: none;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      box-sizing: border-box;
+    }
+    .auth-select:focus { border-color: #7CFF00; box-shadow: 0 0 0 3px rgba(124, 255, 0, 0.1); }
+    .auth-label {
+      display: block;
+      font-size: 11px;
+      font-weight: 800;
+      color: rgba(126, 145, 133, 0.85);
+      letter-spacing: 0.13em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .auth-icon {
+      position: absolute;
+      left: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: rgba(126, 145, 133, 0.55);
+      font-size: 15px;
+      pointer-events: none;
+    }
+    .auth-eye-btn {
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: rgba(126, 145, 133, 0.55);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px;
+      font-size: 15px;
+      transition: color 0.2s;
+    }
+    .auth-eye-btn:hover { color: #fff; }
+
+    /* â”€â”€ Primary Button â”€â”€ */
+    .auth-btn-primary {
+      width: 100%;
+      padding: 17px 24px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #7CFF00 0%, #5bcc00 100%);
+      color: #050A08;
+      font-weight: 900;
+      font-size: 16px;
+      letter-spacing: 0.04em;
+      font-family: 'Outfit', sans-serif;
+      transition: all 0.22s ease;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      box-shadow: 0 6px 28px rgba(124, 255, 0, 0.28), 0 2px 8px rgba(0,0,0,0.5);
+    }
+    .auth-btn-primary:hover {
+      background: linear-gradient(135deg, #93ff25 0%, #6edc00 100%);
+      box-shadow: 0 10px 40px rgba(124, 255, 0, 0.42), 0 4px 12px rgba(0,0,0,0.6);
+      transform: translateY(-2px);
+    }
+    .auth-btn-primary:active { transform: translateY(0); }
+    .auth-btn-primary:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+    /* â”€â”€ Google Button â”€â”€ */
+    .auth-btn-google {
+      width: 100%;
+      padding: 15px 16px;
+      border-radius: 14px;
+      background: rgba(255,255,255,0.035);
+      border: 1.5px solid rgba(38, 70, 52, 0.5);
+      color: #e2e8e4;
+      font-weight: 700;
+      font-size: 15px;
+      font-family: 'Inter', sans-serif;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: all 0.22s ease;
+    }
+    .auth-btn-google:hover {
+      background: rgba(255,255,255,0.075);
+      border-color: rgba(124, 255, 0, 0.35);
+      color: #fff;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.35);
+    }
+
+    /* â”€â”€ Tabs â”€â”€ */
+    .auth-tabs-wrap {
+      background: rgba(5, 9, 7, 0.9);
+      border: 1.5px solid rgba(38, 70, 52, 0.4);
+      border-radius: 14px;
+      padding: 5px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .auth-tab-active {
+      background: #7CFF00;
+      color: #050A08;
+      font-weight: 900;
+      border-radius: 10px;
+      padding: 9px 26px;
+      font-size: 13px;
+      letter-spacing: 0.02em;
+      font-family: 'Outfit', sans-serif;
+      transition: all 0.22s ease;
+      box-shadow: 0 3px 14px rgba(124, 255, 0, 0.35);
+      border: none;
+      cursor: pointer;
+    }
+    .auth-tab-inactive {
+      background: transparent;
+      color: rgba(126, 145, 133, 0.8);
+      font-weight: 700;
+      border-radius: 10px;
+      padding: 9px 26px;
+      font-size: 13px;
+      font-family: 'Outfit', sans-serif;
+      transition: all 0.22s ease;
+      border: none;
+      cursor: pointer;
+    }
+    .auth-tab-inactive:hover { color: #fff; background: rgba(255,255,255,0.05); }
+
+    /* â”€â”€ OR divider â”€â”€ */
+    .auth-or-divider {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin: 22px 0;
+    }
+    .auth-or-divider::before, .auth-or-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: rgba(38, 70, 52, 0.5);
+    }
+
+    /* â”€â”€ Fade in card animation â”€â”€ */
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .auth-card-anim { animation: fadeInUp 0.5s ease both; }
+
+    /* â”€â”€ Form field group â”€â”€ */
+    .auth-field { margin-bottom: 18px; }
+
+    /* â”€â”€ Security badge â”€â”€ */
+    .auth-security-badge {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px;
+      margin-top: 20px;
+      border-top: 1px solid rgba(38, 70, 52, 0.35);
+      color: rgba(126, 145, 133, 0.7);
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body class="text-slate-200 min-h-screen flex flex-col antialiased">
+
+  <!-- ========================================== -->
+  <!-- 1. Authentication View (Split Screen)      -->
+  <!-- ========================================== -->
+  <div id="auth-view" class="h-screen max-h-screen overflow-hidden w-full flex flex-col bg-cyber-bg cyber-grid relative select-none" style="padding: 20px 48px 16px;">
+    
+    <!-- Ambient Floating Glows -->
+    <div class="absolute top-0 left-0 w-[600px] h-[600px] rounded-full pointer-events-none z-0" style="background: radial-gradient(circle, rgba(124,255,0,0.04) 0%, transparent 70%); transform: translate(-30%, -30%);"></div>
+    <div class="absolute bottom-0 right-0 w-[500px] h-[500px] rounded-full pointer-events-none z-0 animate-glow-float-2" style="background: radial-gradient(circle, rgba(124,255,0,0.035) 0%, transparent 70%); transform: translate(20%, 20%);"></div>
+    <div class="absolute top-1/3 left-1/2 w-[300px] h-[300px] rounded-full pointer-events-none z-0 animate-glow-float-3" style="background: radial-gradient(circle, rgba(14,44,25,0.12) 0%, transparent 70%);"></div>
+
+    <!-- Top Brand Logo Header -->
+    <header class="flex items-center justify-between w-full max-w-[1400px] mx-auto z-10 mb-6">
+      <div class="flex items-center gap-x-3">
+        <div style="width:44px;height:44px;border-radius:50%;border:2px solid #7CFF00;display:flex;align-items:center;justify-content:center;box-shadow:0 0 20px rgba(124,255,0,0.35);background:#050A08;">
+          <i class="fa-solid fa-bolt" style="color:#7CFF00;font-size:18px;"></i>
+        </div>
+        <div class="flex flex-col text-left">
+          <span style="font-family:'Outfit',sans-serif;font-weight:900;font-size:26px;letter-spacing:-0.02em;color:#fff;line-height:1;">VoltIQ</span>
+          <span style="font-size:10px;color:#7E9185;margin-top:3px;line-height:1;letter-spacing:0.06em;">Powering Smarter Energy</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Section -->
+    <div class="flex-grow flex flex-row items-center w-full max-w-[1400px] mx-auto z-10 overflow-hidden" style="gap:60px;">
+      
+      <!-- Left Column: Marketing & Interactive Gauge -->
+      <div class="hidden lg:flex flex-col text-left justify-center flex-1" style="padding-right:20px;">
+        <span style="font-size:11px;font-weight:800;color:#7CFF00;letter-spacing:0.22em;text-transform:uppercase;display:block;margin-bottom:18px;">RELIABLE. SMART. PROACTIVE.</span>
+        
+        <!-- Login Heading -->
+        <h1 id="auth-left-heading-login" style="font-family:'Outfit',sans-serif;font-size:clamp(44px,5vw,64px);font-weight:900;color:#fff;line-height:1.06;margin-bottom:16px;">
+          Welcome <span style="color:#7CFF00;">back</span>
+        </h1>
+        <p id="auth-left-desc-login" style="font-size:17px;color:#7E9185;max-width:380px;line-height:1.65;margin-bottom:36px;">
+          Log in to your account and stay in complete control of your energy infrastructure.
+        </p>
+
+        <!-- Signup Heading (Hidden by default) -->
+        <h1 id="auth-left-heading-signup" style="font-family:'Outfit',sans-serif;font-size:clamp(44px,5vw,64px);font-weight:900;color:#fff;line-height:1.06;margin-bottom:16px;display:none;">
+          Create <span style="color:#7CFF00;">account</span>
+        </h1>
+        <p id="auth-left-desc-signup" style="font-size:17px;color:#7E9185;max-width:380px;line-height:1.65;margin-bottom:36px;display:none;">
+          Register a new account to monitor and protect your inverter fleet in real time.
+        </p>
+
+        <!-- Solar Panel & Glassmorphic Stats Card -->
+        <div style="position:relative;width:100%;max-width:460px;aspect-ratio:16/10;border-radius:24px;overflow:visible;z-index:10;">
+          <div style="width:100%;height:100%;border-radius:24px;overflow:hidden;border:1px solid rgba(38,70,52,0.4);box-shadow:0 30px 80px rgba(0,0,0,0.6);position:relative;">
+            <img src="dark_solar_panel.png" alt="Solar Panel" style="width:100%;height:100%;object-fit:cover;opacity:0.85;" />
+            <div style="position:absolute;inset:0;background:linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 60%);"></div>
+            <div class="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-transparent via-cyber-green to-transparent opacity-85 shadow-[0_0_8px_#7CFF00] animate-scan-line pointer-events-none"></div>
+          </div>
+
+          <!-- Glassmorphic Performance Card -->
+          <div class="glass-panel" style="position:absolute;bottom:-20px;right:-20px;width:270px;border-radius:20px;padding:14px;border:1px solid rgba(38,70,52,0.55);box-shadow:0 24px 60px rgba(0,0,0,0.55);">
+            <div style="display:flex;align-items:center;justify-content:space-between;color:#7E9185;font-size:10px;text-transform:uppercase;font-weight:800;letter-spacing:0.1em;margin-bottom:10px;">
+              <span>System Performance</span>
+              <i class="fa-solid fa-chart-simple" style="color:#7CFF00;"></i>
+            </div>
+            <div style="display:flex;align-items:center;gap:14px;margin-bottom:12px;">
+              <div style="position:relative;display:flex;align-items:center;justify-content:center;">
+                <svg width="52" height="52">
+                  <circle stroke="rgba(30,50,40,0.7)" stroke-width="4" fill="transparent" r="22" cx="26" cy="26"/>
+                  <circle class="text-cyber-green progress-ring-circle" stroke="#7CFF00" stroke-width="4" stroke-dasharray="138.2" stroke-dashoffset="19.3" stroke-linecap="round" fill="transparent" r="22" cx="26" cy="26"/>
+                </svg>
+                <span style="position:absolute;font-size:9px;font-weight:900;color:#fff;">98.6%</span>
+              </div>
+              <div>
+                <span style="font-size:20px;font-weight:900;color:#fff;display:block;line-height:1;">98.6%</span>
+                <span style="font-size:10px;color:#7E9185;">System Uptime</span>
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding-top:10px;border-top:1px solid rgba(30,50,40,0.5);">
+              <div>
+                <span style="font-size:8px;color:#7E9185;display:block;">Solar Output</span>
+                <span style="font-size:11px;font-weight:900;color:#7CFF00;" class="digital-nums">10.2 kW</span>
+              </div>
+              <div>
+                <span style="font-size:8px;color:#7E9185;display:block;">Consumption</span>
+                <span style="font-size:11px;font-weight:900;color:#fff;" class="digital-nums">8.7 kW</span>
+              </div>
+              <div>
+                <span style="font-size:8px;color:#7E9185;display:block;">Grid Export</span>
+                <span style="font-size:11px;font-weight:900;color:#fff;" class="digital-nums">1.5 kW</span>
+              </div>
+            </div>
+            <!-- Terminal -->
+            <div style="margin-top:12px;background:rgba(0,0,0,0.7);border-radius:12px;padding:10px;border:1px solid rgba(38,70,52,0.3);min-height:52px;">
+              <div style="display:flex;align-items:center;gap:6px;color:#7CFF00;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:5px;" class="font-mono">
+                <span style="width:7px;height:7px;background:#7CFF00;border-radius:50%;display:inline-block;" class="animate-ping"></span>
+                Uptime Stream
+              </div>
+              <div id="terminal-stream" style="font-family:monospace;font-size:9px;color:#94a3b8;white-space:pre-wrap;word-break:break-all;line-height:1.5;">root@voltiq:~$ awaiting credentials...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Premium Auth Card -->
+      <div style="flex-shrink:0;width:100%;max-width:680px;display:flex;justify-content:flex-end;">
+        <div class="auth-card-anim" style="width:100%;max-height:calc(100vh - 120px);overflow-y:auto;background:linear-gradient(145deg, rgba(9,16,12,0.97) 0%, rgba(6,11,8,0.99) 100%);border:1px solid rgba(38,70,52,0.5);border-radius:28px;padding:36px 40px;box-shadow:0 32px 80px rgba(0,0,0,0.7),0 0 0 1px rgba(38,70,52,0.2),inset 0 1px 0 rgba(124,255,0,0.06);">
+          
+          <!-- Tab Header -->
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:32px;">
+            <div class="auth-tabs-wrap">
+              <button id="toggle-tab-login" onclick="toggleAuthForms(true)" class="auth-tab-active">
+                Log in
+              </button>
+              <button id="toggle-tab-signup" onclick="toggleAuthForms(false)" class="auth-tab-inactive">
+                Create account
+              </button>
+            </div>
+            <a href="#" onclick="window.location.reload()" style="font-size:13px;color:#7E9185;font-weight:700;text-decoration:none;transition:color 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#7E9185'">â† Back to Home</a>
+          </div>
+
+          <!-- Title & Subtitle -->
+          <div style="margin-bottom:28px;">
+            <h2 id="auth-right-title" style="font-family:'Outfit',sans-serif;font-size:36px;font-weight:900;color:#fff;letter-spacing:-0.02em;line-height:1.1;margin:0 0 8px 0;">
+              Log in to <span style="color:#7CFF00;">VoltIQ</span>
+            </h2>
+            <p id="auth-right-subtitle" style="font-size:15px;color:#7E9185;margin:0;line-height:1.5;">
+              Secure access to your energy monitoring dashboard
+            </p>
+          </div>
+
+          <!-- Error Alert Banner -->
+          <div id="auth-error-banner" class="hidden" style="margin-bottom:20px;padding:14px 16px;background:rgba(255,59,48,0.1);border:1.5px solid rgba(255,59,48,0.35);border-radius:14px;color:#FF3B30;font-size:14px;font-weight:600;display:flex;align-items:center;gap:10px;">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <span id="auth-error-text">An error occurred</span>
+          </div>
+
+          <!-- ================= LOGIN FORM ================= -->
+          <div id="login-form-container" class="w-full">
+            <form onsubmit="handleEmailLogin(event)">
+
+              <!-- Email -->
+              <div class="auth-field">
+                <label class="auth-label">Email Address</label>
+                <div style="position:relative;">
+                  <i class="fa-solid fa-envelope auth-icon"></i>
+                  <input type="email" id="login-email" required placeholder="you@example.com" oninput="updateTerminalStream(event)" class="auth-input" />
+                </div>
+              </div>
+
+              <!-- Password -->
+              <div class="auth-field">
+                <label class="auth-label">Password</label>
+                <div style="position:relative;">
+                  <i class="fa-solid fa-lock auth-icon"></i>
+                  <input type="password" id="login-password" required placeholder="Enter your password" oninput="updateTerminalStream(event)" class="auth-input" style="padding-right:50px;" />
+                  <button type="button" onclick="togglePasswordVisibility('login-password')" class="auth-eye-btn">
+                    <i id="login-password-eye" class="fa-solid fa-eye"></i>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Remember & Forgot -->
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                  <input type="checkbox" id="login-remember" checked style="width:16px;height:16px;accent-color:#7CFF00;" />
+                  <span style="font-size:13px;color:#7E9185;font-weight:600;">Remember me</span>
+                </label>
+                <a href="#" onclick="handleForgotPassword()" style="font-size:13px;color:#7CFF00;font-weight:700;text-decoration:none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">Forgot password?</a>
+              </div>
+
+              <button type="submit" id="btn-login-submit" class="auth-btn-primary" style="margin-bottom:0;">
+                <span>Log in</span>
+                <i class="fa-solid fa-arrow-right-to-bracket" style="font-size:16px;"></i>
+              </button>
+            </form>
+
+            <!-- OR divider -->
+            <div class="auth-or-divider">
+              <span style="font-size:12px;color:#7E9185;font-weight:700;letter-spacing:0.1em;">OR</span>
+            </div>
+
+            <!-- Google Sign-in -->
+            <button onclick="handleGoogleSignIn()" class="auth-btn-google" style="margin-bottom:24px;">
+              <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.35-8.16 2.35-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+              <span>Continue with Google</span>
+            </button>
+
+            <div style="text-align:center;font-size:14px;color:#7E9185;">
+              Don't have an account?
+              <button onclick="toggleAuthForms(false)" style="color:#7CFF00;font-weight:700;background:none;border:none;cursor:pointer;margin-left:4px;font-size:14px;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">Create account</button>
+            </div>
+          </div>
+
+          <!-- ================= SIGNUP FORM ================= -->
+          <div id="signup-form-container" class="w-full hidden">
+            <form onsubmit="handleEmailSignup(event)">
+
+              <!-- Full Name -->
+              <div class="auth-field">
+                <label class="auth-label">Full Name</label>
+                <div style="position:relative;">
+                  <i class="fa-solid fa-user auth-icon"></i>
+                  <input type="text" id="signup-name" required placeholder="Your full name" oninput="updateTerminalStream(event)" class="auth-input" />
+                </div>
+              </div>
+
+              <!-- Email -->
+              <div class="auth-field">
+                <label class="auth-label">Email Address</label>
+                <div style="position:relative;">
+                  <i class="fa-solid fa-envelope auth-icon"></i>
+                  <input type="email" id="signup-email" required placeholder="you@example.com" oninput="updateTerminalStream(event)" class="auth-input" />
+                </div>
+              </div>
+
+              <!-- Phone Number -->
+              <div class="auth-field">
+                <label class="auth-label">Phone Number</label>
+                <div style="display:flex;gap:10px;">
+                  <div style="position:relative;flex-shrink:0;width:110px;">
+                    <select id="signup-country-code" onchange="updateTerminalStream({target: document.getElementById('signup-phone')})" class="auth-select" style="padding-left:12px;">
+                      <option value="+1">ðŸ‡ºðŸ‡¸ +1</option>
+                      <option value="+44">ðŸ‡¬ðŸ‡§ +44</option>
+                      <option value="+20" selected>ðŸ‡ªðŸ‡¬ +20</option>
+                      <option value="+966">ðŸ‡¸ðŸ‡¦ +966</option>
+                      <option value="+971">ðŸ‡¦ðŸ‡ª +971</option>
+                      <option value="+965">ðŸ‡°ðŸ‡¼ +965</option>
+                      <option value="+974">ðŸ‡¶ðŸ‡¦ +974</option>
+                      <option value="+968">ðŸ‡´ðŸ‡² +968</option>
+                    </select>
+                    <i class="fa-solid fa-chevron-down" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);color:#7E9185;font-size:11px;pointer-events:none;"></i>
+                  </div>
+                  <div style="position:relative;flex:1;">
+                    <i class="fa-solid fa-phone auth-icon"></i>
+                    <input type="tel" id="signup-phone" required placeholder="100 123 4567" oninput="updateTerminalStream(event)" class="auth-input" />
+                  </div>
+                </div>
+              </div>
+
+              <!-- Password (2 columns) -->
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px;">
+                <div>
+                  <label class="auth-label">Password</label>
+                  <div style="position:relative;">
+                    <i class="fa-solid fa-lock auth-icon"></i>
+                    <input type="password" id="signup-password" required placeholder="Create password" oninput="updateTerminalStream(event)" class="auth-input" style="padding-right:50px;" />
+                    <button type="button" onclick="togglePasswordVisibility('signup-password')" class="auth-eye-btn">
+                      <i id="signup-password-eye" class="fa-solid fa-eye"></i>
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <label class="auth-label">Confirm Password</label>
+                  <div style="position:relative;">
+                    <i class="fa-solid fa-check auth-icon"></i>
+                    <input type="password" id="signup-confirm-password" required placeholder="Confirm password" oninput="updateTerminalStream(event)" class="auth-input" style="padding-right:50px;" />
+                    <button type="button" onclick="togglePasswordVisibility('signup-confirm-password')" class="auth-eye-btn">
+                      <i id="signup-confirm-password-eye" class="fa-solid fa-eye"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <button type="submit" id="btn-signup-submit" class="auth-btn-primary" style="margin-bottom:0;">
+                <span>Create Account</span>
+                <i class="fa-solid fa-user-plus" style="font-size:16px;"></i>
+              </button>
+            </form>
+
+            <!-- OR divider -->
+            <div class="auth-or-divider">
+              <span style="font-size:12px;color:#7E9185;font-weight:700;letter-spacing:0.1em;">OR</span>
+            </div>
+
+            <!-- Google Sign-in -->
+            <button onclick="handleGoogleSignIn()" class="auth-btn-google" style="margin-bottom:24px;">
+              <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.35-8.16 2.35-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+              <span>Continue with Google</span>
+            </button>
+
+            <div style="text-align:center;font-size:14px;color:#7E9185;">
+              Already have an account?
+              <button onclick="toggleAuthForms(true)" style="color:#7CFF00;font-weight:700;background:none;border:none;cursor:pointer;margin-left:4px;font-size:14px;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">Sign In</button>
+            </div>
+          </div>
+
+          <!-- Security Badge -->
+          <div class="auth-security-badge">
+            <i class="fa-solid fa-shield-halved" style="color:#7CFF00;font-size:14px;"></i>
+            <span>Your data is protected with enterprise-grade security</span>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- ========================================== -->
+  <!-- 2. Main Application View (Dashboard)        -->
+  <!-- ========================================== -->
+  <div id="app-view" class="hidden flex-grow flex flex-col">
+    
+    <!-- Top Navigation Header -->
+    <header class="h-16 border-b border-cyber-border bg-cyber-bg/95 backdrop-blur-md sticky top-0 z-50 flex items-center px-4 sm:px-6 justify-between">
+      <!-- Brand / Logo -->
+      <div class="flex items-center gap-x-3">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#66DD00] to-[#7CFF00] flex items-center justify-center shadow-lg shadow-cyber-green/20">
+          <i class="fa-solid fa-bolt text-cyber-bg text-lg"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-x-2">
+            <span class="font-extrabold text-2xl tracking-tight text-white digital-nums">VoltIQ</span>
+            <span class="text-[9px] px-1.5 py-0.5 bg-[#122419] text-[#7CFF00] font-black rounded border border-[#1f3827]">SYS v2.8</span>
+          </div>
+          <p class="text-[9px] text-cyber-muted -mt-0.5">Powering a Smarter Tomorrow</p>
+        </div>
+      </div>
+
+      <!-- Center Horizontal Nav Tabs (Hidden on small screens) -->
+      <nav class="hidden lg:flex items-center gap-x-1">
+        <button onclick="injectFault('F0')" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#122419] text-[#7CFF00] border border-[#1f3827]">Dashboard</button>
+        <button class="px-3 py-1.5 rounded-lg text-xs font-medium text-cyber-muted hover:text-slate-200">Systems</button>
+        <button class="px-3 py-1.5 rounded-lg text-xs font-medium text-cyber-muted hover:text-slate-200">Devices</button>
+        <button class="px-3 py-1.5 rounded-lg text-xs font-medium text-cyber-muted hover:text-slate-200">Analytics</button>
+        <button class="px-3 py-1.5 rounded-lg text-xs font-medium text-cyber-muted hover:text-slate-200">Faults</button>
+        <button class="px-3 py-1.5 rounded-lg text-xs font-medium text-cyber-muted hover:text-slate-200">Reports</button>
+      </nav>
+
+      <!-- Right Controls -->
+      <div class="flex items-center gap-x-3">
+        <!-- Search Button -->
+        <button class="w-8 h-8 rounded-lg hover:bg-slate-800/40 border border-transparent hover:border-cyber-border text-cyber-muted flex items-center justify-center transition-all">
+          <i class="fa-solid fa-magnifying-glass text-sm"></i>
+        </button>
+
+        <!-- Theme Selector Dropdown -->
+        <div class="hidden sm:flex items-center gap-x-2 px-3 py-1 bg-[#0c1611] border border-cyber-border rounded-xl">
+          <span class="w-2 h-2 rounded-full bg-cyber-green"></span>
+          <span class="text-xs font-semibold text-white digital-nums">Cyber Green</span>
+        </div>
+
+        <!-- Notifications Bell -->
+        <button class="relative w-8 h-8 rounded-lg hover:bg-slate-800/40 border border-transparent hover:border-cyber-border text-cyber-muted flex items-center justify-center transition-all">
+          <i class="fa-regular fa-bell text-sm"></i>
+          <span class="absolute top-1 right-1 w-4 h-4 bg-cyber-red text-white text-[9px] font-black rounded-full flex items-center justify-center scale-90">2</span>
+        </button>
+
+        <!-- User Profile Avatar & Realtime Info -->
+        <div id="user-profile-widget" class="flex items-center gap-x-2.5 pr-2 border-l border-cyber-border ml-1.5">
+          <div id="user-avatar-char" class="w-8 h-8 rounded-full bg-cyber-green text-cyber-bg font-extrabold flex items-center justify-center text-xs">
+            A
+          </div>
+          <div class="hidden md:block text-left">
+            <div id="user-display-name" class="text-xs font-bold text-white">Loading...</div>
+            <div class="text-[9px] text-cyber-muted">System Operator</div>
+          </div>
+          <!-- Sign out icon button -->
+          <button onclick="handleLogout()" class="ml-2 text-cyber-muted hover:text-cyber-red transition-colors p-1" title="Sign Out">
+            <i class="fa-solid fa-right-from-bracket"></i>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Shell Wrapper (Sidebar + Main Content) -->
+    <div class="flex flex-grow overflow-hidden">
+
+      <!-- Left Sidebar (Collapsible/Hidden on Mobile) -->
+      <aside class="hidden lg:flex flex-col w-56 border-r border-cyber-border bg-cyber-bg/95 backdrop-blur-md p-4 justify-between flex-shrink-0">
+        
+        <!-- Top Nav Section -->
+        <div class="flex flex-col gap-y-6">
+          <div>
+            <p class="text-[10px] font-bold text-cyber-muted tracking-wider uppercase px-3 mb-2">MAIN</p>
+            <div class="flex flex-col gap-y-1">
+              <a href="#" class="flex items-center gap-x-3 px-3 py-2 rounded-xl text-xs font-semibold active-nav-link">
+                <i class="fa-solid fa-grid-2 text-sm w-4"></i>
+                <span>Dashboard</span>
+              </a>
+              <a href="#" class="flex items-center gap-x-3 px-3 py-2 rounded-xl text-xs font-medium text-cyber-muted hover:text-slate-200 transition-colors">
+                <i class="fa-solid fa-server w-4 text-sm"></i>
+                <span>Systems</span>
+              </a>
+              <a href="#" class="flex items-center gap-x-3 px-3 py-2 rounded-xl text-xs font-medium text-cyber-muted hover:text-slate-200 transition-colors">
+                <i class="fa-solid fa-microchip w-4 text-sm"></i>
+                <span>Devices</span>
+              </a>
+              <a href="#" class="flex items-center gap-x-3 px-3 py-2 rounded-xl text-xs font-medium text-cyber-muted hover:text-slate-200 transition-colors">
+                <i class="fa-solid fa-chart-line w-4 text-sm"></i>
+                <span>Analytics</span>
+              </a>
+              <a href="#" class="flex items-center gap-x-3 px-3 py-2 rounded-xl text-xs font-medium text-cyber-muted hover:text-slate-200 transition-colors">
+                <i class="fa-solid fa-bolt-lightning w-4 text-sm"></i>
+                <span>Fault History</span>
+              </a>
+              <a href="#" class="flex items-center gap-x-3 px-3 py-2 rounded-xl text-xs font-medium text-cyber-muted hover:text-slate-200 transition-colors">
+                <i class="fa-regular fa-bell w-4 text-sm"></i>
+                <span>Alerts</span>
+              </a>
+              <a href="#" class="flex items-center gap-x-3 px-3 py-2 rounded-xl text-xs font-medium text-cyber-muted hover:text-slate-200 transition-colors">
+                <i class="fa-regular fa-file-lines w-4 text-sm"></i>
+                <span>Reports</span>
+              </a>
+            </div>
+          </div>
+
+          <div>
+            <p class="text-[10px] font-bold text-cyber-muted tracking-wider uppercase px-3 mb-2">SYSTEM</p>
+            <div class="flex flex-col gap-y-1">
+              <a href="#" class="flex items-center gap-x-3 px-3 py-2 rounded-xl text-xs font-medium text-cyber-muted hover:text-slate-200 transition-colors">
+                <i class="fa-solid fa-sliders w-4 text-sm"></i>
+                <span>Settings</span>
+              </a>
+              <a href="#" class="flex items-center gap-x-3 px-3 py-2 rounded-xl text-xs font-medium text-cyber-muted hover:text-slate-200 transition-colors">
+                <i class="fa-solid fa-users w-4 text-sm"></i>
+                <span>Users</span>
+              </a>
+              <a href="#" class="flex items-center gap-x-3 px-3 py-2 rounded-xl text-xs font-medium text-cyber-muted hover:text-slate-200 transition-colors">
+                <i class="fa-solid fa-shield-halved w-4 text-sm"></i>
+                <span>Security Center</span>
+              </a>
+              <a href="#" class="flex items-center gap-x-3 px-3 py-2 rounded-xl text-xs font-medium text-cyber-muted hover:text-slate-200 transition-colors">
+                <i class="fa-solid fa-clock-rotate-left w-4 text-sm"></i>
+                <span>Logs</span>
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bottom Card: System Time & Sign Out -->
+        <div class="p-3 bg-[#0d1611] border border-cyber-border rounded-2xl flex flex-col gap-y-3">
+          <div>
+            <p class="text-[9px] text-cyber-muted uppercase tracking-wider font-bold">System Time</p>
+            <div id="sidebar-time" class="text-sm font-black text-white mt-1 digital-nums">--:--:--</div>
+            <div class="flex items-center gap-x-1.5 text-[9px] text-[#7CFF00] mt-1 font-semibold">
+              <span class="w-1.5 h-1.5 rounded-full bg-[#7CFF00] animate-ping"></span>
+              <span>Live</span>
+            </div>
+          </div>
+          
+          <button onclick="handleLogout()" class="w-full py-2 rounded-xl text-[10px] font-bold text-cyber-red bg-cyber-red/10 border border-cyber-red/35 hover:bg-cyber-red/20 transition-all flex items-center justify-center gap-x-1.5">
+            <i class="fa-solid fa-right-from-bracket"></i>
+            <span>Sign Out</span>
+          </button>
+        </div>
+
+      </aside>
+
+      <!-- Main Content Area (Scrollable) -->
+      <main class="flex-grow p-4 sm:p-6 overflow-y-auto flex flex-col gap-6">
+
+        <!-- Dynamic Fault Injection Control Panel (Top row for ease of demo) -->
+        <div class="glass-panel rounded-3xl p-4 flex flex-col md:flex-row justify-between items-center gap-4 border-cyber-border">
+          <div>
+            <h4 class="text-xs font-extrabold text-white flex items-center gap-x-2">
+              <i class="fa-solid fa-gamepad text-[#7CFF00] text-sm"></i>
+              <span>Software Fault Injection Control Panel</span>
+            </h4>
+            <p class="text-[10px] text-cyber-muted mt-0.5">Click any button below to simulate an instant fault and test automated dashboard responses</p>
+          </div>
+          <div class="flex flex-wrap gap-1.5 justify-center">
+            <button onclick="injectFault('F0')" class="px-2.5 py-1.5 rounded-lg text-[10px] font-bold bg-[#122419] text-[#7CFF00] border border-[#23432d] hover:bg-[#1a3825] transition-colors">ðŸŸ¢ F0 Normal</button>
+            <button onclick="injectFault('F1')" class="px-2.5 py-1.5 rounded-lg text-[10px] font-bold bg-cyber-red/10 text-cyber-red border border-cyber-red/30 hover:bg-cyber-red/20 transition-colors">F1 Overcurrent</button>
+            <button onclick="injectFault('F2')" class="px-2.5 py-1.5 rounded-lg text-[10px] font-bold bg-cyber-red/10 text-cyber-red border border-cyber-red/30 hover:bg-cyber-red/20 transition-colors">F2 Undervoltage</button>
+            <button onclick="injectFault('F3')" class="px-2.5 py-1.5 rounded-lg text-[10px] font-bold bg-[#331c10] text-[#ff9f10] border border-[#522f18] hover:bg-[#462713] transition-colors">F3 Overheating</button>
+            <button onclick="injectFault('F4')" class="px-2.5 py-1.5 rounded-lg text-[10px] font-bold bg-cyber-red/10 text-cyber-red border border-cyber-red/30 hover:bg-cyber-red/20 transition-colors">F4 Power Drop</button>
+            <button onclick="injectFault('F5')" class="px-2.5 py-1.5 rounded-lg text-[10px] font-bold bg-cyber-red/10 text-[#ff7b7b] border border-cyber-red/30 hover:bg-cyber-red/20 transition-colors">F5 Imbalance</button>
+            <button onclick="injectFault('F6')" class="px-2.5 py-1.5 rounded-lg text-[10px] font-bold bg-cyber-red/10 text-cyber-red border border-cyber-red/30 hover:bg-cyber-red/20 transition-colors">F6 Overvoltage</button>
+            <button onclick="injectFault('F7')" class="px-2.5 py-1.5 rounded-lg text-[10px] font-bold bg-[#262828] text-slate-300 border border-slate-600/30 hover:bg-[#343636] transition-colors">F7 Anomaly</button>
+          </div>
+        </div>
+
+        <!-- Sensor Metrics Grid (4 cards) -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <!-- Voltage -->
+          <div class="glass-panel rounded-3xl p-4 flex flex-col justify-between min-h-[110px]">
+            <div class="flex items-center justify-between text-cyber-muted text-xs">
+              <span>Line Voltage</span>
+              <div class="w-6 h-6 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center"><i class="fa-solid fa-bolt text-xs"></i></div>
+            </div>
+            <div class="mt-2.5">
+              <div class="flex items-baseline gap-x-1">
+                <span id="card-voltage" class="text-xl sm:text-2xl font-black text-white digital-nums">220.5</span>
+                <span class="text-[10px] text-cyber-muted">V</span>
+              </div>
+              <div class="flex items-center justify-between mt-2 pt-2 border-t border-slate-800/30 text-[9px]">
+                <span class="text-cyber-muted">Real-time Drift</span>
+                <span id="trend-voltage" class="px-1.5 py-0.5 rounded font-bold bg-[#102518] text-[#7CFF00]">+0.3</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Current -->
+          <div class="glass-panel rounded-3xl p-4 flex flex-col justify-between min-h-[110px]">
+            <div class="flex items-center justify-between text-cyber-muted text-xs">
+              <span>Load Current</span>
+              <div class="w-6 h-6 rounded-lg bg-sky-500/10 text-sky-400 flex items-center justify-center"><i class="fa-solid fa-wave-square text-xs"></i></div>
+            </div>
+            <div class="mt-2.5">
+              <div class="flex items-baseline gap-x-1">
+                <span id="card-current" class="text-xl sm:text-2xl font-black text-white digital-nums">3.20</span>
+                <span class="text-[10px] text-cyber-muted">A</span>
+              </div>
+              <div class="flex items-center justify-between mt-2 pt-2 border-t border-slate-800/30 text-[9px]">
+                <span class="text-cyber-muted">Current Load</span>
+                <span id="trend-current" class="px-1.5 py-0.5 rounded font-bold bg-[#102518] text-[#7CFF00]">-0.05</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Power -->
+          <div class="glass-panel rounded-3xl p-4 flex flex-col justify-between min-h-[110px]">
+            <div class="flex items-center justify-between text-cyber-muted text-xs">
+              <span>Active Power</span>
+              <div class="w-6 h-6 rounded-lg bg-[#7CFF00]/10 text-[#7CFF00] flex items-center justify-center"><i class="fa-solid fa-plug text-xs"></i></div>
+            </div>
+            <div class="mt-2.5">
+              <div class="flex items-baseline gap-x-1">
+                <span id="card-power" class="text-xl sm:text-2xl font-black text-white digital-nums">704</span>
+                <span class="text-[10px] text-cyber-muted">W</span>
+              </div>
+              <div class="flex items-center justify-between mt-2 pt-2 border-t border-slate-800/30 text-[9px]">
+                <span class="text-cyber-muted">Consumption Rate</span>
+                <span id="trend-power" class="px-1.5 py-0.5 rounded font-bold bg-[#102518] text-[#7CFF00]">+12</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Temperature -->
+          <div class="glass-panel rounded-3xl p-4 flex flex-col justify-between min-h-[110px]">
+            <div class="flex items-center justify-between text-cyber-muted text-xs">
+              <span>Temperature</span>
+              <div class="w-6 h-6 rounded-lg bg-rose-500/10 text-rose-400 flex items-center justify-center"><i class="fa-solid fa-temperature-half text-xs"></i></div>
+            </div>
+            <div class="mt-2.5">
+              <div class="flex items-baseline gap-x-1">
+                <span id="card-temp" class="text-xl sm:text-2xl font-black text-white digital-nums">35.4</span>
+                <span class="text-[10px] text-cyber-muted">Â°C</span>
+              </div>
+              <div class="flex items-center justify-between mt-2 pt-2 border-t border-slate-800/30 text-[9px]">
+                <span class="text-cyber-muted">Cooler Status</span>
+                <span id="trend-temp" class="px-1.5 py-0.5 rounded font-bold bg-[#102518] text-[#7CFF00]">+0.2</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Content Core Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+          <!-- Left/Center Column (Alert Area, Chart, History Table) - col-span-8 -->
+          <div class="lg:col-span-8 flex flex-col gap-6">
+            
+            <!-- Alert Area -->
+            <div class="glass-panel rounded-3xl p-5 border-cyber-border">
+              <div class="flex items-center justify-between mb-4 border-b border-cyber-border/40 pb-2">
+                <div class="flex items-center gap-x-2">
+                  <i class="fa-solid fa-circle-exclamation text-[#7CFF00] text-sm"></i>
+                  <h3 class="text-sm font-bold text-white">Alert Area</h3>
+                </div>
+                <span id="alert-needed-badge" class="px-2 py-0.5 text-[9px] font-black uppercase rounded-full bg-[#102518] text-[#7CFF00] border border-[#23432d]">Normal</span>
+              </div>
+
+              <!-- List of dynamic alert rows -->
+              <div id="alerts-list-container" class="flex flex-col gap-3">
+                <!-- Dynamically populated or Normal state -->
+              </div>
+            </div>
+
+            <!-- Live Line Chart -->
+            <div class="glass-panel rounded-3xl p-5 border-cyber-border">
+              <h4 class="text-xs font-bold text-white flex items-center gap-x-2 mb-4">
+                <i class="fa-solid fa-chart-line text-[#7CFF00] text-sm"></i>
+                <span>Real-time System Metrics Chart</span>
+              </h4>
+              <div class="w-full h-52 relative">
+                <canvas id="liveTimelineChart"></canvas>
+              </div>
+            </div>
+
+            <!-- Fault History Section -->
+            <div class="glass-panel rounded-3xl p-5 border-cyber-border">
+              <div class="flex items-center justify-between mb-4 pb-2 border-b border-cyber-border/30">
+                <div class="flex items-center gap-x-2">
+                  <i class="fa-solid fa-clock-rotate-left text-[#7CFF00] text-sm"></i>
+                  <h3 class="text-sm font-bold text-white">Fault History Section</h3>
+                </div>
+                <button onclick="clearHistoryLog()" class="px-3 py-1.5 text-[9px] font-semibold text-cyber-muted hover:text-white bg-slate-800/30 hover:bg-slate-800 border border-slate-700/50 rounded-xl transition-all">
+                  Clear History
+                </button>
+              </div>
+
+              <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs">
+                  <thead>
+                    <tr class="text-cyber-muted border-b border-slate-800/30">
+                      <th class="pb-2 font-medium">Time</th>
+                      <th class="pb-2 font-medium w-16">Class</th>
+                      <th class="pb-2 font-medium">Diagnosis & Details</th>
+                      <th class="pb-2 font-medium text-right">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody id="history-table-body" class="divide-y divide-slate-800/30">
+                    <!-- Dynamically populated -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Right Column (Shutdown, AI model info, Circular Gauge, mascot, ML Predictor Card) - col-span-4 -->
+          <div class="lg:col-span-4 flex flex-col gap-6">
+            
+            <!-- Emergency Shutdown Card -->
+            <div class="glass-panel rounded-3xl p-5 border-cyber-border flex items-center justify-between">
+              <div class="flex items-center gap-x-3">
+                <div class="w-9 h-9 bg-cyber-red/10 border border-cyber-red/30 rounded-xl text-cyber-red flex items-center justify-center">
+                  <i class="fa-solid fa-power-off text-sm"></i>
+                </div>
+                <div>
+                  <h4 class="text-xs font-bold text-white">Emergency Shutdown</h4>
+                  <p class="text-[9px] text-cyber-muted mt-0.5">Safely decouple inverter from grid immediately</p>
+                </div>
+              </div>
+              <button onclick="triggerEmergencyShutdown()" class="px-2.5 py-1.5 bg-cyber-red text-white text-[10px] font-black rounded-lg hover:bg-[#e0342a] transition-colors uppercase">
+                CRIT
+              </button>
+            </div>
+
+            <!-- Wattson AI Model Status -->
+            <div class="glass-panel rounded-3xl p-5 border-cyber-border flex flex-col gap-y-3">
+              <div class="flex justify-between items-center text-xs">
+                <span class="text-cyber-muted">Wattson AI Model</span>
+                <div class="flex items-center gap-x-1 text-cyber-green font-bold">
+                  <span class="w-1.5 h-1.5 rounded-full bg-cyber-green animate-pulse"></span>
+                  <span class="text-[10px]">Online & Active</span>
+                </div>
+              </div>
+              <div class="flex justify-between items-center text-xs pt-2.5 border-t border-slate-800/30">
+                <span class="text-cyber-muted">Grid Protection</span>
+                <div class="flex items-center gap-x-1 text-cyber-green font-bold">
+                  <span class="w-1.5 h-1.5 rounded-full bg-cyber-green"></span>
+                  <span class="text-[10px]">Armed</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Circular System Health & Metrics Card -->
+            <div class="glass-panel rounded-3xl p-5 border-cyber-border flex flex-col justify-between relative overflow-hidden min-h-[180px]">
+              <h4 class="text-xs font-bold text-white flex items-center gap-x-2">
+                <i class="fa-solid fa-heart-pulse text-[#7CFF00] text-sm"></i>
+                <span>System Health & Metrics</span>
+              </h4>
+
+              <div class="flex items-center justify-between my-4 z-10">
+                <!-- Radial ring -->
+                <div class="relative flex items-center justify-center">
+                  <svg class="w-20 h-20">
+                    <circle class="text-slate-800/50" stroke-width="6" stroke="currentColor" fill="transparent" r="30" cx="40" cy="40" />
+                    <circle id="health-ring" class="text-cyber-green progress-ring-circle" stroke-width="6" stroke-dasharray="188.4" stroke-dashoffset="9.42" stroke-linecap="round" stroke="currentColor" fill="transparent" r="30" cx="40" cy="40" />
+                  </svg>
+                  <span id="health-text" class="absolute text-base font-black text-white digital-nums">95%</span>
+                </div>
+
+                <!-- Sparkline Trend -->
+                <div class="flex-grow flex flex-col items-end pr-2">
+                  <span class="text-[9px] text-cyber-muted">Health Score Trend</span>
+                  <!-- Sparkline SVG -->
+                  <svg class="w-20 h-8 text-cyber-green mt-1" viewBox="0 0 100 30" fill="none">
+                    <path id="sparkline-path" d="M 0,25 Q 15,10 30,20 T 60,15 T 90,8 T 100,5" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                  </svg>
+                  <span class="text-[9px] text-[#7CFF00] mt-1 font-semibold flex items-center gap-x-1">
+                    <i class="fa-solid fa-arrow-trend-up"></i>
+                    <span>Up 8% this week.</span>
+                  </span>
+                </div>
+              </div>
+
+              <p class="text-[9px] text-cyber-muted border-t border-slate-800/30 pt-2 z-10">
+                Cumulative inverter efficiency and input phase compatibility.
+              </p>
+
+              <!-- Cute Mascot (svg robot) at bottom-right -->
+              <div class="absolute bottom-1.5 right-1.5 w-10 h-10 opacity-70 z-0 select-none">
+                <svg viewBox="0 0 100 100" fill="none" class="w-full h-full text-cyber-green filter drop-shadow-[0_0_8px_rgba(124,255,0,0.5)]">
+                  <!-- Mascot Head -->
+                  <rect x="20" y="30" width="60" height="45" rx="15" fill="rgba(11,21,16,0.9)" stroke="currentColor" stroke-width="4"/>
+                  <path d="M 40,30 L 30,15 M 60,30 L 70,15" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+                  <!-- Ears/Antennas -->
+                  <circle cx="30" cy="15" r="4" fill="currentColor"/>
+                  <circle cx="70" cy="15" r="4" fill="currentColor"/>
+                  <!-- Glowing Eyes -->
+                  <circle cx="40" cy="50" r="5" fill="currentColor"/>
+                  <circle cx="60" cy="50" r="5" fill="currentColor"/>
+                  <!-- Mouth -->
+                  <path d="M 42,65 Q 50,70 58,65" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+                </svg>
+              </div>
+            </div>
+
+            <!-- ML Predictor Card / System Status (F0 to F7 display) -->
+            <div class="glass-panel rounded-3xl p-5 border-cyber-border flex flex-col justify-between min-h-[200px] bg-gradient-to-br from-[#0b1510] to-[#0c1e14] relative">
+              <div class="flex justify-between items-start">
+                <div>
+                  <p class="text-[10px] text-cyber-muted font-bold tracking-wider">Edge Inference Engine (AI Model)</p>
+                  <h4 class="text-xs font-bold text-white mt-0.5">Fault Prediction Card</h4>
+                </div>
+                <span class="text-[8px] font-black px-1.5 py-0.5 bg-[#122419] text-[#7CFF00] border border-[#23432d] rounded-lg">EdgeML v1.8</span>
+              </div>
+
+              <!-- Predicted Class Display -->
+              <div class="my-4 flex items-center justify-between">
+                <div>
+                  <p class="text-[9px] text-cyber-muted font-semibold uppercase">Predicted Class</p>
+                  <div id="ml-pred-class" class="text-4xl font-black text-cyber-green digital-nums mt-0.5">F0</div>
+                </div>
+                <div class="text-left flex-grow pl-4 max-w-[65%]">
+                  <div class="flex justify-between items-baseline mb-1">
+                    <span class="text-[9px] text-cyber-muted">Model Confidence</span>
+                    <span id="ml-pred-confidence" class="digital-nums text-xs font-black text-white">96.8%</span>
+                  </div>
+                  <div class="w-full h-2 bg-black/40 rounded-full overflow-hidden border border-cyber-border/40 p-0.5">
+                    <div id="ml-pred-bar" class="h-full rounded-full bg-gradient-to-r from-green-500 to-[#7CFF00] transition-all duration-500" style="width: 96.8%"></div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="border-t border-slate-800/30 pt-3">
+                <p class="text-[9px] text-cyber-muted font-bold uppercase">Diagnosis & Explanation</p>
+                <p id="ml-pred-desc" class="text-[10px] text-slate-200 mt-1 leading-relaxed font-medium">
+                  All systems are operating normally. No electrical, thermal, or hardware faults detected.
+                </p>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+      </main>
+
+    </div>
+
+  </div>
+
+
+  <!-- Page Logic Script -->
+  <script>
+    // ==========================================
+    // Firebase & Auth Core Logic
+    // ==========================================
+
+    // Initialize Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyA_Xkn1FeXnQdVbXaKXSag-a4JDki_uq7s",
+      authDomain: "voltiq-9c37b.firebaseapp.com",
+      projectId: "voltiq-9c37b",
+      storageBucket: "voltiq-9c37b.firebasestorage.app",
+      messagingSenderId: "448761445875",
+      appId: "1:448761445875:web:e929197add547897936686",
+      measurementId: "G-FQ0LE37XVH"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+
+    // Set Session Persistence (Requires re-login on fresh browser session / close)
+    auth.setPersistence(firebase.auth.Auth.Persistence.SESSION)
+      .catch((error) => {
+        console.error("Failed to set session persistence:", error);
+      });
+
+    // Toggle Forms Login/Signup
+    function toggleAuthForms(showLogin) {
+      hideAuthError();
+      const tabLogin = document.getElementById('toggle-tab-login');
+      const tabSignup = document.getElementById('toggle-tab-signup');
+
+      if (showLogin) {
+        document.getElementById('login-form-container').classList.remove('hidden');
+        document.getElementById('signup-form-container').classList.add('hidden');
+        
+        // Toggle right-side title
+        document.getElementById('auth-right-title').innerHTML = `Log in to <span style="color:#7CFF00;">VoltIQ</span>`;
+        document.getElementById('auth-right-subtitle').textContent = `Secure access to your energy monitoring dashboard`;
+        
+        // Toggle left-side heading visibility (uses inline display:none)
+        document.getElementById('auth-left-heading-login').style.display = '';
+        document.getElementById('auth-left-desc-login').style.display = '';
+        document.getElementById('auth-left-heading-signup').style.display = 'none';
+        document.getElementById('auth-left-desc-signup').style.display = 'none';
+
+        if (tabLogin && tabSignup) {
+          tabLogin.className = 'auth-tab-active';
+          tabSignup.className = 'auth-tab-inactive';
+        }
+      } else {
+        document.getElementById('login-form-container').classList.add('hidden');
+        document.getElementById('signup-form-container').classList.remove('hidden');
+        
+        // Toggle right-side title
+        document.getElementById('auth-right-title').innerHTML = `Sign up to <span style="color:#7CFF00;">VoltIQ</span>`;
+        document.getElementById('auth-right-subtitle').textContent = `Register a new account to get started`;
+        
+        // Toggle left-side heading visibility
+        document.getElementById('auth-left-heading-login').style.display = 'none';
+        document.getElementById('auth-left-desc-login').style.display = 'none';
+        document.getElementById('auth-left-heading-signup').style.display = '';
+        document.getElementById('auth-left-desc-signup').style.display = '';
+
+        if (tabLogin && tabSignup) {
+          tabLogin.className = 'auth-tab-inactive';
+          tabSignup.className = 'auth-tab-active';
+        }
+      }
+    }
+
+    function togglePasswordVisibility(inputId) {
+      const input = document.getElementById(inputId);
+      const eyeIcon = document.getElementById(inputId + '-eye');
+      if (input.type === 'password') {
+        input.type = 'text';
+        eyeIcon.classList.remove('fa-eye');
+        eyeIcon.classList.add('fa-eye-slash');
+      } else {
+        input.type = 'password';
+        eyeIcon.classList.remove('fa-eye-slash');
+        eyeIcon.classList.add('fa-eye');
+      }
+    }
+
+    async function handleGoogleSignIn() {
+      hideAuthError();
+      const provider = new firebase.auth.GoogleAuthProvider();
+      try {
+        await auth.signInWithPopup(provider);
+      } catch (error) {
+        if (error.code === 'auth/popup-blocked') {
+          showAuthError('custom', 'Sign-in popup was blocked by the browser. Please allow popups for this site.');
+        } else if (error.code === 'auth/operation-not-allowed') {
+          showAuthError('custom', 'Google Sign-In is not enabled in Firebase Console. Please enable it in Authentication provider settings.');
+        } else {
+          showAuthError(error.code, error.message);
+        }
+      }
+    }
+
+    function handleForgotPassword() {
+      const email = document.getElementById('login-email').value.trim();
+      if (!email) {
+        showAuthError('custom', 'Please enter your email address first to reset password.');
+        return;
+      }
+      auth.sendPasswordResetEmail(email)
+        .then(() => {
+          alert('Password reset email has been sent to ' + email);
+        })
+        .catch((error) => {
+          showAuthError(error.code, error.message);
+        });
+    }
+
+    function updateTerminalStream(event) {
+      const input = event.target;
+      const term = document.getElementById('terminal-stream');
+      if (!term) return;
+
+      let text = 'root@voltiq:~$ ';
+      if (!input.value) {
+        term.innerHTML = text + 'awaiting input<span class="animate-pulse">|</span>';
+        return;
+      }
+
+      if (input.id === 'login-email') {
+        text += `auth_stream --email "${input.value}"`;
+      } else if (input.id === 'login-password') {
+        const masked = 'â€¢'.repeat(input.value.length);
+        text += `crypt_key --hash "${masked}"`;
+      } else if (input.id === 'signup-name') {
+        text += `user_init --name "${input.value}"`;
+      } else if (input.id === 'signup-email') {
+        text += `auth_stream --email "${input.value}"`;
+      } else if (input.id === 'signup-phone') {
+        const code = document.getElementById('signup-country-code').value;
+        text += `com_link --phone "${code} ${input.value}"`;
+      } else if (input.id === 'signup-password') {
+        const masked = 'â€¢'.repeat(input.value.length);
+        text += `crypt_key --hash "${masked}"`;
+      } else if (input.id === 'signup-confirm-password') {
+        const masked = 'â€¢'.repeat(input.value.length);
+        text += `verify_key --hash "${masked}"`;
+      }
+
+      term.innerHTML = text + '<span class="animate-pulse">|</span>';
+    }
+
+    // Auth Errors Mapping (English)
+    const AUTH_ERRORS = {
+      'auth/invalid-email': 'Invalid email address format.',
+      'auth/user-disabled': 'This account has been disabled by administrators.',
+      'auth/user-not-found': 'No account found matching this email address.',
+      'auth/wrong-password': 'Incorrect password.',
+      'auth/email-already-in-use': 'This email address is already registered.',
+      'auth/weak-password': 'Password is too weak. Choose at least 6 characters.',
+      'auth/operation-not-allowed': 'Email/Password sign-in is disabled in Firebase Console.',
+      'auth/invalid-credential': 'Invalid email address or password.'
+    };
+
+    function showAuthError(code, message) {
+      const banner = document.getElementById('auth-error-banner');
+      const text = document.getElementById('auth-error-text');
+      const errorMsg = AUTH_ERRORS[code] || message || 'An unexpected authentication error occurred.';
+      text.textContent = errorMsg;
+      banner.classList.remove('hidden');
+    }
+
+    function hideAuthError() {
+      document.getElementById('auth-error-banner').classList.add('hidden');
+    }
+
+    // Form handlers
+    async function handleEmailLogin(event) {
+      event.preventDefault();
+      hideAuthError();
+      const email = document.getElementById('login-email').value.trim();
+      const password = document.getElementById('login-password').value;
+      const btn = document.getElementById('btn-login-submit');
+
+      btn.disabled = true;
+      btn.innerHTML = `<span>Verifying credentials...</span><i class="fa-solid fa-spinner animate-spin"></i>`;
+
+      try {
+        await auth.signInWithEmailAndPassword(email, password);
+      } catch (error) {
+        showAuthError(error.code, error.message);
+        btn.disabled = false;
+        btn.innerHTML = `<span>Access System</span><i class="fa-solid fa-arrow-left-to-bracket"></i>`;
+      }
+    }
+
+    async function handleEmailSignup(event) {
+      event.preventDefault();
+      hideAuthError();
+      const name = document.getElementById('signup-name').value.trim();
+      const email = document.getElementById('signup-email').value.trim();
+      const password = document.getElementById('signup-password').value;
+      const confirmPassword = document.getElementById('signup-confirm-password').value;
+      const btn = document.getElementById('btn-signup-submit');
+
+      if (password !== confirmPassword) {
+        showAuthError('custom', 'Passwords do not match.');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = `<span>Creating account...</span><i class="fa-solid fa-spinner animate-spin"></i>`;
+
+      try {
+        const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+        await userCredential.user.updateProfile({
+          displayName: name
+        });
+        
+        // Show successful signup with phone details in terminal log
+        const term = document.getElementById('terminal-stream');
+        if (term) {
+          const code = document.getElementById('signup-country-code').value;
+          const phone = document.getElementById('signup-phone').value.trim();
+          term.innerHTML = `root@voltiq:~$ register --success: welcome ${name}!\nPhone verified: ${code} ${phone}\nStatus: APPROVED`;
+        }
+        
+        updateUserInfo(auth.currentUser);
+      } catch (error) {
+        showAuthError(error.code, error.message);
+        btn.disabled = false;
+        btn.innerHTML = `<span>Register & Access System</span><i class="fa-solid fa-user-plus"></i>`;
+      }
+    }
+
+    function handleLogout() {
+      auth.signOut();
+    }
+
+    // Auth State Monitor
+    auth.onAuthStateChanged((user) => {
+      if (user) {
+        // Logged In
+        updateUserInfo(user);
+        document.getElementById('auth-view').classList.add('hidden');
+        document.getElementById('app-view').classList.remove('hidden');
+        
+        // Reset buttons states
+        const btnLogin = document.getElementById('btn-login-submit');
+        btnLogin.disabled = false;
+        btnLogin.innerHTML = `<span>Access System</span><i class="fa-solid fa-arrow-left-to-bracket"></i>`;
+        
+        const btnSignup = document.getElementById('btn-signup-submit');
+        btnSignup.disabled = false;
+        btnSignup.innerHTML = `<span>Register & Access System</span><i class="fa-solid fa-user-plus"></i>`;
+      } else {
+        // Logged Out - Always force login screen on fresh load
+        document.getElementById('app-view').classList.add('hidden');
+        document.getElementById('auth-view').classList.remove('hidden');
+      }
+    });
+
+    function updateUserInfo(user) {
+      if (!user) return;
+      const name = user.displayName || user.email.split('@')[0] || 'User';
+      document.getElementById('user-display-name').textContent = name;
+      document.getElementById('user-avatar-char').textContent = name.charAt(0).toUpperCase();
+    }
+
+
+    // ==========================================
+    // VoltIQ Fleet - Interactive Core Logic
+    // ==========================================
+
+    const UPDATE_INTERVAL = 3000;
+    const MAX_HISTORY = 10;
+
+    // Standard Fault Classifications
+    const FAULTS = {
+      'F0': {
+        label: 'F0',
+        title: 'Normal Operation',
+        desc: 'All systems are operating normally. No thermal, electrical, or hardware anomalies detected.',
+        severity: 'normal',
+        color: '#7CFF00',
+        light: 'ðŸŸ¢',
+        sub: 'All metrics within safe thresholds'
+      },
+      'F1': {
+        label: 'F1',
+        title: 'Overcurrent Fault',
+        desc: 'Excessive current load detected. Risk of winding degradation and inverter stage damage.',
+        severity: 'fault',
+        color: '#FF3B30',
+        light: 'ðŸ”´',
+        sub: 'Severe current overload on line'
+      },
+      'F2': {
+        label: 'F2',
+        title: 'Undervoltage Fault',
+        desc: 'Critical input voltage drop. May cause inverter controller shutdown or failure to sync.',
+        severity: 'fault',
+        color: '#FF3B30',
+        light: 'ðŸ”´',
+        sub: 'Critical supply line sag'
+      },
+      'F3': {
+        label: 'F3',
+        title: 'Overheating Warning',
+        desc: 'Inverter output stage temperature has exceeded maximum safe thermal threshold.',
+        severity: 'fault',
+        color: '#FF9500',
+        light: 'ðŸ”´',
+        sub: 'High internal core temperature'
+      },
+      'F4': {
+        label: 'F4',
+        title: 'Power Drop Anomaly',
+        desc: 'Unexpected active power output drop detected. Potential efficiency loss or cell degradation.',
+        severity: 'fault',
+        color: '#FF9500',
+        light: 'ðŸ”´',
+        sub: 'Inverter output efficiency drop'
+      },
+      'F5': {
+        label: 'F5',
+        title: 'Phase Imbalance',
+        desc: 'Voltage or current amplitude mismatch detected across the three output grid phases.',
+        severity: 'fault',
+        color: '#FF3B30',
+        light: 'ðŸ”´',
+        sub: 'Imbalance across supply phases'
+      },
+      'F6': {
+        label: 'F6',
+        title: 'Overvoltage Fault',
+        desc: 'Grid voltage exceeded upper threshold limit. Risk of damage to DC filter and capacitors.',
+        severity: 'fault',
+        color: '#FF3B30',
+        light: 'ðŸ”´',
+        sub: 'Input overvoltage spike detected'
+      },
+      'F7': {
+        label: 'F7',
+        title: 'Critical Unknown Anomaly',
+        desc: 'Unexplained sensor patterns detected. Hardware system isolated. Manual inspection required.',
+        severity: 'fault',
+        color: '#E0E0E0',
+        light: 'ðŸ”´',
+        sub: 'Critical undefined device exception'
+      }
+    };
+
+    // Live State
+    let sensors = {
+      voltage: 220.5,
+      current: 3.20,
+      power: 704,
+      temperature: 35.4
+    };
+    let prevSensors = { ...sensors };
+    let currentFaultCode = 'F0';
+    let historyLogs = [];
+    let liveTimelineChart = null;
+
+    // --- DOM Cache ---
+    const dom = {
+      headerTime: document.getElementById('live-time'),
+      sidebarTime: document.getElementById('sidebar-time'),
+      
+      cardVoltage: document.getElementById('card-voltage'),
+      cardCurrent: document.getElementById('card-current'),
+      cardPower: document.getElementById('card-power'),
+      cardTemp: document.getElementById('card-temp'),
+      
+      trendVoltage: document.getElementById('trend-voltage'),
+      trendCurrent: document.getElementById('trend-current'),
+      trendPower: document.getElementById('trend-power'),
+      trendTemp: document.getElementById('trend-temp'),
+
+      alertBadge: document.getElementById('alert-needed-badge'),
+      alertsContainer: document.getElementById('alerts-list-container'),
+      historyBody: document.getElementById('history-table-body'),
+      
+      healthRing: document.getElementById('health-ring'),
+      healthText: document.getElementById('health-text'),
+      sparkline: document.getElementById('sparkline-path'),
+
+      mlClass: document.getElementById('ml-pred-class'),
+      mlConfidence: document.getElementById('ml-pred-confidence'),
+      mlBar: document.getElementById('ml-pred-bar'),
+      mlDesc: document.getElementById('ml-pred-desc')
+    };
+
+    // --- Time Sync ---
+    function updateClock() {
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString('en-US', { hour12: false });
+      if (dom.headerTime) dom.headerTime.textContent = timeStr;
+      if (dom.sidebarTime) dom.sidebarTime.textContent = timeStr;
+    }
+
+    // --- Chart ---
+    function initChart() {
+      const ctx = document.getElementById('liveTimelineChart').getContext('2d');
+      
+      const gradTemp = ctx.createLinearGradient(0, 0, 0, 180);
+      gradTemp.addColorStop(0, 'rgba(239, 68, 68, 0.35)');
+      gradTemp.addColorStop(1, 'rgba(239, 68, 68, 0.0)');
+
+      const gradVolt = ctx.createLinearGradient(0, 0, 0, 180);
+      gradVolt.addColorStop(0, 'rgba(245, 158, 11, 0.35)');
+      gradVolt.addColorStop(1, 'rgba(245, 158, 11, 0.0)');
+
+      liveTimelineChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: Array(10).fill(''),
+          datasets: [
+            {
+              label: 'Temperature (Â°C)',
+              data: [35, 35.4, 35.8, 35.2, 35.9, 36.4, 35.4, 35.6, 35.4, 35.4],
+              borderColor: '#EF4444',
+              backgroundColor: gradTemp,
+              borderWidth: 2,
+              fill: true,
+              tension: 0.4,
+              pointBackgroundColor: '#EF4444'
+            },
+            {
+              label: 'Voltage (V)',
+              data: [219, 220, 221, 220.5, 219.6, 220.4, 222, 220.5, 220.1, 220.5],
+              borderColor: '#F59E0B',
+              backgroundColor: gradVolt,
+              borderWidth: 2,
+              fill: true,
+              tension: 0.4,
+              pointBackgroundColor: '#F59E0B'
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              labels: {
+                color: '#7E9185',
+                font: { family: 'Inter', size: 9 }
+              }
+            }
+          },
+          scales: {
+            y: {
+              grid: { color: 'rgba(38, 70, 52, 0.15)' },
+              ticks: { color: '#7E9185', font: { family: 'Outfit', size: 9 } }
+            },
+            x: {
+              grid: { display: false },
+              ticks: { display: false }
+            }
+          }
+        }
+      });
+    }
+
+    function addChartData(temp, voltage) {
+      if (!liveTimelineChart) return;
+      const labels = liveTimelineChart.data.labels;
+      const tempData = liveTimelineChart.data.datasets[0].data;
+      const voltData = liveTimelineChart.data.datasets[1].data;
+
+      if (labels.length >= 12) {
+        labels.shift();
+        tempData.shift();
+        voltData.shift();
+      }
+
+      labels.push(new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+      tempData.push(temp);
+      voltData.push(voltage);
+
+      liveTimelineChart.update('none');
+    }
+
+    // --- Update Sensor Display ---
+    function updateTrend(el, diff, dec = 1) {
+      if (!el) return;
+      if (Math.abs(diff) < 0.01) {
+        el.textContent = 'â€”';
+        el.className = "px-1.5 py-0.5 rounded font-bold bg-[#15231C] text-cyber-muted";
+      } else if (diff > 0) {
+        el.textContent = `+${diff.toFixed(dec)}`;
+        el.className = "px-1.5 py-0.5 rounded font-bold bg-[#102518] text-[#7CFF00]";
+      } else {
+        el.textContent = `${diff.toFixed(dec)}`;
+        el.className = "px-1.5 py-0.5 rounded font-bold bg-red-950/40 text-cyber-red";
+      }
+    }
+
+    function renderSensors() {
+      if (dom.cardVoltage) dom.cardVoltage.textContent = sensors.voltage.toFixed(1);
+      if (dom.cardCurrent) dom.cardCurrent.textContent = sensors.current.toFixed(2);
+      if (dom.cardPower) dom.cardPower.textContent = sensors.power.toFixed(0);
+      if (dom.cardTemp) dom.cardTemp.textContent = sensors.temperature.toFixed(1);
+
+      updateTrend(dom.trendVoltage, sensors.voltage - prevSensors.voltage, 1);
+      updateTrend(dom.trendCurrent, sensors.current - prevSensors.current, 2);
+      updateTrend(dom.trendPower, sensors.power - prevSensors.power, 0);
+      updateTrend(dom.trendTemp, sensors.temperature - prevSensors.temperature, 1);
+
+      prevSensors = { ...sensors };
+    }
+
+    // --- ML Prediction Evaluator ---
+    function evaluateMetrics() {
+      const { voltage, current, power, temperature } = sensors;
+      let scores = { F0: 100, F1: 0, F2: 0, F3: 0, F4: 0, F5: 0, F6: 0, F7: 0 };
+
+      if (current > 5.5) scores.F1 += 80;
+      else if (current > 4.5) scores.F1 += 40;
+
+      if (voltage < 192) scores.F2 += 90;
+      else if (voltage < 205) scores.F2 += 50;
+
+      if (temperature > 70) scores.F3 += 95;
+      else if (temperature > 55) scores.F3 += 60;
+
+      const expected = voltage * current * 0.92;
+      if (power < expected * 0.7) scores.F4 += 75;
+
+      if (voltage > 255) scores.F6 += 85;
+      else if (voltage > 246) scores.F6 += 45;
+
+      let bestClass = 'F0';
+      let maxScore = scores.F0;
+
+      for (const [code, val] of Object.entries(scores)) {
+        if (val > maxScore) {
+          maxScore = val;
+          bestClass = code;
+        }
+      }
+
+      let sum = Object.values(scores).reduce((a,b) => a+b, 0);
+      let conf = Math.min(99.2, Math.max(65.8, (maxScore / sum) * 100));
+
+      if (bestClass === 'F0') {
+        conf = 95.8 + (Math.random() * 3.4);
+      }
+
+      return { code: bestClass, confidence: conf };
+    }
+
+    // --- UI Renderers ---
+    function renderAlertArea(activeCode) {
+      const isNormal = activeCode === 'F0';
+      const container = dom.alertsContainer;
+      if (!container) return;
+      container.innerHTML = '';
+
+      if (isNormal) {
+        dom.alertBadge.textContent = "Normal";
+        dom.alertBadge.className = "px-2 py-0.5 text-[9px] font-black uppercase rounded-full bg-[#102518] text-[#7CFF00] border border-[#23432d]";
+        
+        container.innerHTML = `
+          <div class="flex items-center justify-between p-3.5 bg-gradient-to-r from-[#102518]/20 to-transparent border border-cyber-green/20 rounded-2xl">
+            <div class="flex items-center gap-x-3">
+              <i class="fa-solid fa-circle-check text-cyber-green text-base"></i>
+              <span class="text-xs text-slate-200">All systems are stable. No active inverter faults detected.</span>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      dom.alertBadge.textContent = "Needed";
+      dom.alertBadge.className = "px-2 py-0.5 text-[9px] font-black uppercase rounded-full bg-red-950/40 text-cyber-red border border-red-900/50";
+
+      // Build Alerts List matching the Fuecono layout
+      let alerts = [];
+
+      // Alert 1: Specific Fault Alert
+      alerts.push({
+        title: `Fault ${activeCode} detected`,
+        desc: FAULTS[activeCode].desc,
+        type: 'error'
+      });
+
+      // Alert 2: Temperature warning if temp is high
+      if (sensors.temperature > 55) {
+        alerts.push({
+          title: 'High temperature warning',
+          desc: 'Inverter temperature is above normal threshold. Monitor closely.',
+          type: 'warning'
+        });
+      }
+
+      alerts.forEach(item => {
+        const isError = item.type === 'error';
+        const cardStyle = isError 
+          ? 'bg-red-950/25 border-cyber-red/35 text-cyber-red'
+          : 'bg-[#2a210f]/20 border-amber-500/35 text-amber-500';
+
+        const row = document.createElement('div');
+        row.className = `flex items-center justify-between p-3.5 border rounded-2xl ${cardStyle} transition-all duration-300`;
+        row.innerHTML = `
+          <div class="flex items-start gap-x-3.5">
+            <div class="mt-0.5">
+              <i class="fa-solid ${isError ? 'fa-triangle-exclamation' : 'fa-circle-exclamation'} text-base"></i>
+            </div>
+            <div>
+              <div class="font-extrabold text-xs text-white">${item.title}</div>
+              <div class="text-[10px] text-slate-300/90 mt-0.5">${item.desc}</div>
+            </div>
+          </div>
+          <button class="px-3 py-1.5 bg-white text-black text-[10px] font-bold rounded-lg hover:bg-slate-200 transition-colors">View</button>
+        `;
+        container.appendChild(row);
+      });
+    }
+
+    function renderStatusUI(activeCode, confidence) {
+      const info = FAULTS[activeCode];
+      
+      // 1. Health gauge ring & score
+      let healthScore = 95;
+      if (activeCode !== 'F0') {
+        if (['F1', 'F2', 'F5', 'F6'].includes(activeCode)) healthScore = 42;
+        else healthScore = 68;
+      }
+      
+      if (dom.healthText) dom.healthText.textContent = healthScore + '%';
+      
+      // Set circular stroke-dashoffset
+      if (dom.healthRing) {
+        const radius = 30;
+        const circumference = 2 * Math.PI * radius; // ~188.4
+        const offset = circumference - (healthScore / 100) * circumference;
+        dom.healthRing.style.strokeDashoffset = offset;
+        
+        if (activeCode === 'F0') {
+          dom.healthRing.setAttribute('class', 'text-cyber-green progress-ring-circle');
+        } else {
+          dom.healthRing.setAttribute('class', 'text-cyber-red progress-ring-circle');
+        }
+      }
+
+      // Sparkline dynamic update based on state
+      if (dom.sparkline) {
+        const sparklinePaths = {
+          'F0': 'M 0,25 Q 15,10 30,20 T 60,15 T 90,8 T 100,5',
+          'F1': 'M 0,10 Q 15,28 30,12 T 60,28 T 90,27 T 100,28',
+          'F2': 'M 0,8 Q 15,25 30,10 T 60,29 T 90,26 T 100,28',
+          'F3': 'M 0,15 Q 15,8 30,22 T 60,10 T 90,26 T 100,24',
+          'F4': 'M 0,12 Q 15,22 30,12 T 60,25 T 90,28 T 100,29',
+          'F5': 'M 0,10 Q 15,28 30,12 T 60,28 T 90,27 T 100,28',
+          'F6': 'M 0,8 Q 15,25 30,10 T 60,29 T 90,26 T 100,28',
+          'F7': 'M 0,15 Q 15,18 30,25 T 60,28 T 90,29 T 100,29'
+        };
+        dom.sparkline.setAttribute('d', sparklinePaths[activeCode] || sparklinePaths['F0']);
+      }
+
+      // 2. ML Predictor Card UI
+      if (dom.mlClass) dom.mlClass.textContent = info.label;
+      if (dom.mlClass) dom.mlClass.style.color = info.color;
+      if (dom.mlConfidence) dom.mlConfidence.textContent = confidence.toFixed(1) + '%';
+      if (dom.mlBar) {
+        dom.mlBar.style.width = confidence.toFixed(1) + '%';
+        dom.mlBar.style.background = activeCode === 'F0'
+          ? 'linear-gradient(to left, #7CFF00, #4ade80)'
+          : `linear-gradient(to left, ${info.color}, #f43f5e)`;
+      }
+      if (dom.mlDesc) dom.mlDesc.textContent = info.desc;
+
+      // 3. Alert Area Row population
+      renderAlertArea(activeCode);
+    }
+
+    // --- History Log ---
+    function logHistory(code) {
+      if (code === 'F0') return;
+
+      const now = new Date();
+      const duplicate = historyLogs.find(item => item.class === code && (now - item.raw) < 10000);
+      if (duplicate) return;
+
+      const entry = {
+        time: now.toLocaleTimeString('en-US', { hour12: false }),
+        class: code,
+        title: FAULTS[code].title,
+        desc: FAULTS[code].desc,
+        color: FAULTS[code].color,
+        raw: now
+      };
+
+      historyLogs.unshift(entry);
+      if (historyLogs.length > MAX_HISTORY) historyLogs.pop();
+
+      renderHistoryTable();
+    }
+
+    // History Table populator (LTR)
+    function renderHistoryTable() {
+      const tbody = dom.historyBody;
+      if (!tbody) return;
+      tbody.innerHTML = '';
+
+      if (historyLogs.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="4" class="py-6 text-center text-cyber-muted">
+              No faults logged in history.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      historyLogs.forEach(entry => {
+        const row = document.createElement('tr');
+        row.className = "hover:bg-[#102518]/15 transition-all border-b border-slate-800/20";
+        row.innerHTML = `
+          <td class="py-2.5 font-mono text-cyber-muted digital-nums">${entry.time}</td>
+          <td class="py-2.5">
+            <span class="px-2 py-0.5 rounded text-[10px] font-black border" style="color: ${entry.color}; border-color: ${entry.color}40; background-color: ${entry.color}10">
+              ${entry.class}
+            </span>
+          </td>
+          <td class="py-2.5 text-slate-300 font-semibold pl-1">${entry.title}</td>
+          <td class="py-2.5 text-right">
+            <span class="text-[9px] px-1.5 py-0.5 rounded-full bg-red-500/10 text-[#FF4D4D]">
+              Active
+            </span>
+          </td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    function clearHistoryLog() {
+      historyLogs = [];
+      renderHistoryTable();
+    }
+
+    // --- Simulation Run ---
+    function simulateSensors() {
+      const vDrift = (Math.random() - 0.5) * 0.7;
+      const cDrift = (Math.random() - 0.5) * 0.08;
+      const tDrift = (Math.random() - 0.5) * 0.4;
+
+      if (currentFaultCode === 'F0') {
+        sensors.voltage += vDrift;
+        sensors.current += cDrift;
+        sensors.temperature += tDrift;
+
+        sensors.voltage = Math.max(216, Math.min(225, sensors.voltage));
+        sensors.current = Math.max(2.8, Math.min(3.6, sensors.current));
+        sensors.temperature = Math.max(33, Math.min(42, sensors.temperature));
+        sensors.power = sensors.voltage * sensors.current * 0.94;
+      } else {
+        sensors.voltage += vDrift * 0.2;
+        sensors.current += cDrift * 0.2;
+        sensors.temperature += tDrift * 0.2;
+
+        if (currentFaultCode === 'F1') sensors.current = Math.max(5.9, sensors.current);
+        if (currentFaultCode === 'F2') sensors.voltage = Math.min(186, sensors.voltage);
+        if (currentFaultCode === 'F3') sensors.temperature = Math.max(77, sensors.temperature);
+        if (currentFaultCode === 'F6') sensors.voltage = Math.max(259, sensors.voltage);
+
+        sensors.power = sensors.voltage * sensors.current * 0.88;
+      }
+
+      addChartData(sensors.temperature, sensors.voltage);
+      renderSensors();
+
+      const assessment = evaluateMetrics();
+
+      if (assessment.code !== currentFaultCode) {
+        currentFaultCode = assessment.code;
+        logHistory(currentFaultCode);
+      }
+
+      renderStatusUI(currentFaultCode, assessment.confidence);
+    }
+
+    // --- Controls ---
+    function injectFault(code) {
+      currentFaultCode = code;
+
+      if (code === 'F0') {
+        sensors = { voltage: 220.5, current: 3.20, power: 704, temperature: 35.4 };
+      } else if (code === 'F1') {
+        sensors.current = 6.3;
+      } else if (code === 'F2') {
+        sensors.voltage = 182;
+      } else if (code === 'F3') {
+        sensors.temperature = 81;
+      } else if (code === 'F4') {
+        sensors.power = 190;
+        sensors.current = 2.1;
+      } else if (code === 'F5') {
+        sensors.current = 5.2;
+      } else if (code === 'F6') {
+        sensors.voltage = 263;
+      } else if (code === 'F7') {
+        sensors.temperature = 53.5;
+        sensors.current = 1.2;
+      }
+
+      sensors.power = sensors.voltage * sensors.current * 0.92;
+
+      logHistory(code);
+      renderSensors();
+      const assessment = evaluateMetrics();
+      renderStatusUI(code, assessment.confidence);
+      addChartData(sensors.temperature, sensors.voltage);
+    }
+
+    function triggerEmergencyShutdown() {
+      injectFault('F7');
+    }
+
+    // --- Bootstrap ---
+    function initApp() {
+      updateClock();
+      setInterval(updateClock, 1000);
+
+      initChart();
+      renderSensors();
+      
+      // Seed Logs
+      logHistory('F3');
+      logHistory('F1');
+
+      injectFault('F0');
+
+      setInterval(simulateSensors, UPDATE_INTERVAL);
+    }
+
+    window.addEventListener('DOMContentLoaded', initApp);
+  </script>
+</body>
+</html>

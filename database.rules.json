@@ -1,0 +1,42 @@
+{
+  "rules": {
+    "users": {
+      ".read": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin' && root.child('users').child(auth.uid).child('status').val() === 'approved'",
+      ".indexOn": ["createdAt", "status", "role"],
+      "$uid": {
+        ".read": "$uid === auth.uid || (auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin' && root.child('users').child(auth.uid).child('status').val() === 'approved')",
+        ".write": "auth != null && ($uid === auth.uid || (root.child('users').child(auth.uid).child('role').val() === 'admin' && root.child('users').child(auth.uid).child('status').val() === 'approved'))",
+        "role": {
+          ".validate": "(auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin' && root.child('users').child(auth.uid).child('status').val() === 'approved') || (!data.exists() && newData.val() === 'user') || (data.exists() && newData.val() === data.val())"
+        },
+        "status": {
+          ".validate": "(auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin' && root.child('users').child(auth.uid).child('status').val() === 'approved') || (!data.exists() && (newData.val() === 'approved' || newData.val() === 'pending')) || (data.exists() && newData.val() === data.val())"
+        }
+      }
+    },
+    "activityLogs": {
+      ".read": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin' && root.child('users').child(auth.uid).child('status').val() === 'approved'",
+      ".indexOn": ["timestamp"],
+      "$logId": {
+        ".write": "auth != null && newData.child('uid').val() === auth.uid",
+        "uid": { ".validate": "newData.isString() && newData.val() === auth.uid" },
+        "email": { ".validate": "newData.isString()" },
+        "action": { ".validate": "newData.isString()" },
+        "timestamp": { ".validate": "newData.isNumber()" },
+        "details": { ".validate": "true" }
+      }
+    },
+    "inverters": {
+      ".read": "auth != null && root.child('users').child(auth.uid).child('status').val() === 'approved'",
+      ".write": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin' && root.child('users').child(auth.uid).child('status').val() === 'approved'"
+    },
+    "aiModels": {
+      ".read": "auth != null && root.child('users').child(auth.uid).child('status').val() === 'approved'",
+      ".write": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin' && root.child('users').child(auth.uid).child('status').val() === 'approved'"
+    },
+    "systems": {
+      ".read": "auth != null && root.child('users').child(auth.uid).child('status').val() === 'approved'",
+      ".write": "auth != null && root.child('users').child(auth.uid).child('status').val() === 'approved'"
+    }
+  }
+}

@@ -1,0 +1,1370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VoltiQ • Inverter Monitoring & Fleet Dashboard</title>
+
+  <!-- VoltiQ Lightning Logo Favicon -->
+  <link rel="icon" href="/favicon.ico" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&amp;family=Space+Grotesk:wght@500;600&amp;display=swap');
+
+    :root {
+      --neon-green: #7CFF00;
+      --deep-black: #050B08;
+      --charcoal: #0C1712;
+      --glass: rgba(12, 23, 18, 0.65);
+    }
+
+    body {
+      font-family: 'Inter', system_ui, sans-serif;
+    }
+
+    .font-display {
+      font-family: 'Space Grotesk', 'Inter', system_ui, sans-serif;
+      font-weight: 600;
+    }
+
+    .energy-bg {
+      background: 
+        linear-gradient(rgba(5, 11, 8, 0.85), rgba(5, 11, 8, 0.92)),
+        url('data:image/svg+xml,%3Csvg width=%221200%22 height=%22800%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cdefs%3E%3ClinearGradient id=%22g%22 x1=%220%25%22 y1=%220%25%22 x2=%22100%25%22 y2=%22100%25%22%3E%3Cstop offset=%220%25%22 stop-color=%22%2310210D%22/%3E%3Cstop offset=%22100%25%22 stop-color=%22%23050B08%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width=%221200%22 height=%22800%22 fill=%22url(%23g)%22/%3E%3C/svg%3E');
+      background-size: cover;
+      background-position: center;
+    }
+
+    .glass {
+      background: var(--glass);
+      backdrop-filter: blur(24px);
+      border: 1px solid rgba(124, 255, 0, 0.15);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4),
+                  inset 0 1px 0 rgba(255,255,255,0.08);
+    }
+
+    .neon-border {
+      border: 1px solid rgba(124, 255, 0, 0.3);
+      box-shadow: 0 0 0 1px rgba(124, 255, 0, 0.1),
+                  0 0 15px rgba(124, 255, 0, 0.15);
+      transition: all 0.2s cubic-bezier(0.23, 1, 0.32, 1);
+    }
+
+    .neon-border:focus-within,
+    .neon-border:hover {
+      border-color: #7CFF00;
+      box-shadow: 0 0 0 1px #7CFF00,
+                  0 0 25px rgba(124, 255, 0, 0.35);
+    }
+
+    .neon-text {
+      color: #7CFF00;
+      text-shadow: 0 0 10px rgba(124, 255, 0, 0.5);
+    }
+
+    .premium-card {
+      transition: transform 0.3s cubic-bezier(0.23, 1, 0.32, 1), 
+                  box-shadow 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+    }
+
+    .premium-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.4);
+    }
+
+    .futuristic-input {
+      transition: all 0.2s cubic-bezier(0.23, 1, 0.32, 1);
+      background: rgba(5, 11, 8, 0.6);
+      border: 1px solid rgba(124, 255, 0, 0.15);
+    }
+
+    .futuristic-input:focus {
+      border-color: #7CFF00;
+      box-shadow: 0 0 0 3px rgba(124, 255, 0, 0.15);
+      background: rgba(12, 23, 18, 0.85);
+    }
+
+    .futuristic-input .icon {
+      transition: color 0.2s ease;
+    }
+
+    .futuristic-input:focus .icon {
+      color: #7CFF00 !important;
+    }
+
+    .segmented-control {
+      background: rgba(5, 11, 8, 0.6);
+      border: 1px solid rgba(124, 255, 0, 0.1);
+    }
+
+    .segmented-btn {
+      transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+      position: relative;
+    }
+
+    .segmented-btn.active {
+      background: #7CFF00;
+      color: #050B08;
+      font-weight: 600;
+      box-shadow: 0 0 15px rgba(124, 255, 0, 0.4);
+    }
+
+    .energy-grid {
+      background-image: 
+        linear-gradient(rgba(124, 255, 0, 0.07) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(124, 255, 0, 0.07) 1px, transparent 1px);
+      background-size: 60px 60px;
+      animation: gridMove 25s linear infinite;
+    }
+
+    @keyframes gridMove {
+      0% { background-position: 0 0; }
+      100% { background-position: 60px 60px; }
+    }
+
+    .solar-pulse {
+      animation: solarPulse 4s ease-in-out infinite;
+    }
+
+    .particle {
+      position: absolute;
+      width: 3px;
+      height: 3px;
+      background: #7CFF00;
+      border-radius: 50%;
+      box-shadow: 0 0 6px #7CFF00;
+      pointer-events: none;
+      animation: particleFloat 6s linear infinite;
+      opacity: 0.6;
+    }
+
+    .metric-value {
+      font-variant-numeric: tabular-nums;
+      transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+    }
+
+    .terminal-line {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 0.75rem;
+      line-height: 1.3;
+    }
+
+    .glassmorphism {
+      background: rgba(12, 23, 18, 0.72);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+    }
+
+    .auth-card {
+      box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.5),
+                  0 10px 10px -6px rgb(0 0 0 / 0.4),
+                  0 0 0 1px rgba(124, 255, 0, 0.1);
+    }
+
+    .step-indicator {
+      transition: all 0.3s ease;
+    }
+
+    .energy-option {
+      transition: all 0.3s cubic-bezier(0.23, 1.0, 0.32, 1);
+    }
+
+    .energy-option:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 0 1px #7CFF00,
+                  0 20px 25px -5px rgb(0 0 0 / 0.1),
+                  0 8px 10px -6px rgb(0 0 0 / 0.1);
+    }
+
+    .energy-option.selected {
+      border-color: #7CFF00;
+      box-shadow: 0 0 0 1px #7CFF00,
+                  0 0 25px rgba(124, 255, 0, 0.3);
+      background: rgba(124, 255, 0, 0.05);
+    }
+
+    .cinematic-overlay {
+      animation: cinematicFade 0.6s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+    }
+
+    .neon-glow {
+      box-shadow: 0 0 8px rgba(124, 255, 0, 0.4),
+                  0 0 20px rgba(124, 255, 0, 0.2);
+    }
+
+    .premium-button {
+      position: relative;
+      overflow: hidden;
+      transition: all 0.2s cubic-bezier(0.23, 1, 0.32, 1);
+    }
+
+    .premium-button::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -100%;
+      width: 50%;
+      height: 200%;
+      background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255,255,255,0.25),
+        transparent
+      );
+      transition: 0.5s;
+    }
+
+    .premium-button:hover::after {
+      left: 250%;
+    }
+
+    .futuristic-gauge {
+      transition: stroke-dashoffset 0.8s cubic-bezier(0.23, 1, 0.32, 1);
+    }
+
+    .tilt-card {
+      transition: transform 0.15s ease;
+      transform-style: preserve-3d;
+    }
+
+    .live-dot {
+      animation: livePulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+
+    .section-header {
+      letter-spacing: -0.025em;
+    }
+  </style>
+</head>
+<body class="bg-[#050B08] text-[#D8E2DC] overflow-x-hidden">
+  <!-- Main Container -->
+  <div class="min-h-screen flex">
+    
+    <!-- LEFT SIDE: Cinematic Branding -->
+    <div class="hidden lg:flex w-5/12 relative overflow-hidden energy-bg">
+      <!-- Background Grid + Particles -->
+      <div class="absolute inset-0 energy-grid"></div>
+      
+      <!-- Animated Particles Container -->
+      <div id="particles-container" class="absolute inset-0 pointer-events-none"></div>
+      
+      <!-- Solar Panel Visuals -->
+      <div class="absolute bottom-12 right-8 w-64 h-36 opacity-70">
+        <div class="relative w-full h-full">
+          <!-- Solar Panel Array -->
+          <div class="absolute inset-0 bg-gradient-to-br from-[#10210D] to-[#050B08] border border-[#1F2B24] rounded-2xl overflow-hidden">
+            <div class="grid grid-cols-4 grid-rows-3 h-full w-full p-2 gap-1">
+              <div class="bg-[#0C1712] rounded-sm solar-pulse" style="animation-delay: 0ms;"></div>
+              <div class="bg-[#0C1712] rounded-sm solar-pulse" style="animation-delay: 800ms;"></div>
+              <div class="bg-[#0C1712] rounded-sm solar-pulse" style="animation-delay: 1600ms;"></div>
+              <div class="bg-[#0C1712] rounded-sm solar-pulse" style="animation-delay: 400ms;"></div>
+              <div class="bg-[#0C1712] rounded-sm solar-pulse" style="animation-delay: 1200ms;"></div>
+              <div class="bg-[#0C1712] rounded-sm solar-pulse" style="animation-delay: 200ms;"></div>
+              <div class="bg-[#0C1712] rounded-sm solar-pulse" style="animation-delay: 1000ms;"></div>
+              <div class="bg-[#0C1712] rounded-sm solar-pulse" style="animation-delay: 600ms;"></div>
+              <div class="bg-[#0C1712] rounded-sm solar-pulse" style="animation-delay: 1400ms;"></div>
+              <div class="bg-[#0C1712] rounded-sm solar-pulse" style="animation-delay: 300ms;"></div>
+              <div class="bg-[#0C1712] rounded-sm solar-pulse" style="animation-delay: 900ms;"></div>
+              <div class="bg-[#0C1712] rounded-sm solar-pulse" style="animation-delay: 500ms;"></div>
+            </div>
+            <!-- Green light pulses overlay -->
+            <div class="absolute inset-0 bg-gradient-to-br from-transparent via-[#7CFF00]/10 to-transparent"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Left Content -->
+      <div class="relative z-10 flex flex-col h-full p-12">
+        <!-- Logo -->
+        <div class="flex items-center gap-x-3 mb-10">
+          <div class="flex items-center justify-center w-11 h-11 rounded-2xl bg-[#7CFF00] shadow-[0_0_25px_rgba(124,255,0,0.5)]">
+            <i class="fa-solid fa-bolt text-[#050B08] text-3xl"></i>
+          </div>
+          <div>
+            <span class="font-display text-4xl font-semibold tracking-tighter text-white">VoltiQ</span>
+          </div>
+        </div>
+
+        <div class="mt-auto mb-12">
+          <div class="max-w-md">
+            <h1 class="font-display text-6xl leading-[1.05] font-semibold tracking-tighter text-white mb-4">
+              Real-time energy.<br>
+              Absolute control.
+            </h1>
+            <p class="text-xl text-[#8A9A8F]">
+              Powering Smarter Energy
+            </p>
+          </div>
+        </div>
+
+        <!-- Floating Live Dashboard Card -->
+        <div class="glass rounded-3xl p-6 w-full max-w-[340px] mb-8 premium-card tilt-card" id="live-dashboard-card">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <div class="text-xs tracking-[1px] text-[#7CFF00] font-medium">LIVE SYSTEM</div>
+              <div class="font-semibold text-lg">Command Center</div>
+            </div>
+            <div class="flex items-center gap-x-1.5">
+              <div class="w-2 h-2 rounded-full bg-[#7CFF00] live-dot"></div>
+              <span class="text-xs font-mono text-[#7CFF00]">ONLINE</span>
+            </div>
+          </div>
+
+          <div class="space-y-4">
+            <!-- Metrics -->
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <div class="text-[10px] text-[#8A9A8F] mb-px">SYSTEM UPTIME</div>
+                <div class="font-mono text-3xl font-semibold tabular-nums text-white" id="uptime">98.6</div>
+                <div class="text-xs text-[#7CFF00]">%</div>
+              </div>
+              <div>
+                <div class="text-[10px] text-[#8A9A8F] mb-px">SOLAR OUTPUT</div>
+                <div class="font-mono text-3xl font-semibold tabular-nums text-white" id="solar-output">10.2</div>
+                <div class="text-xs text-[#7CFF00]">kW</div>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <div class="text-[10px] text-[#8A9A8F] mb-px">CONSUMPTION</div>
+                <div class="font-mono text-3xl font-semibold tabular-nums text-white" id="consumption">8.7</div>
+                <div class="text-xs text-[#7CFF00]">kW</div>
+              </div>
+              <div>
+                <div class="text-[10px] text-[#8A9A8F] mb-px">GRID EXPORT</div>
+                <div class="font-mono text-3xl font-semibold tabular-nums text-white" id="grid-export">1.5</div>
+                <div class="text-xs text-[#7CFF00]">kW</div>
+              </div>
+            </div>
+
+            <!-- Circular Gauge -->
+            <div class="flex items-center gap-4 pt-1">
+              <div class="relative w-12 h-12">
+                <svg class="w-12 h-12 -rotate-90" viewBox="0 0 42 42">
+                  <circle cx="21" cy="21" r="18" fill="none" stroke="#1F2B24" stroke-width="4"></circle>
+                  <circle id="gauge-circle" cx="21" cy="21" r="18" fill="none" 
+                          stroke="#7CFF00" stroke-width="4" 
+                          stroke-dasharray="113" stroke-dashoffset="22.6"
+                          stroke-linecap="round"></circle>
+                </svg>
+                <div class="absolute inset-0 flex items-center justify-center">
+                  <span class="font-mono text-sm font-bold text-[#7CFF00]" id="efficiency">86</span>
+                </div>
+              </div>
+              <div class="flex-1">
+                <div class="text-xs text-[#8A9A8F]">GRID EFFICIENCY</div>
+                <div class="text-xs text-[#7CFF00] font-medium">OPTIMAL</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Terminal Status -->
+        <div class="glass rounded-2xl p-3.5 w-full max-w-[340px] font-mono text-[11px] leading-tight border border-[#1F2B24]">
+          <div class="flex items-center gap-2 mb-1.5 text-[#8A9A8F]">
+            <i class="fa-solid fa-terminal text-[10px]"></i>
+            <span class="font-medium">root@voltiq</span>
+          </div>
+          <div id="terminal-output" class="text-[#7CFF00] h-[42px] overflow-hidden"></div>
+        </div>
+      </div>
+
+      <!-- Subtle overlay gradient -->
+      <div class="absolute inset-0 bg-gradient-to-r from-[#050B08]/70 via-transparent to-transparent pointer-events-none"></div>
+    </div>
+
+    <!-- RIGHT SIDE: Authentication -->
+    <div class="w-full lg:w-7/12 flex items-center justify-center p-6 lg:p-12 bg-[#050B08]">
+      <div class="w-full max-w-[420px]">
+        
+        <!-- Glassmorphism Auth Card -->
+        <div class="glass rounded-3xl p-8 auth-card relative overflow-hidden" id="auth-card">
+          
+          <!-- Subtle inner glow -->
+          <div class="absolute inset-0 bg-gradient-to-br from-[#7CFF00]/5 to-transparent pointer-events-none rounded-3xl"></div>
+
+          <!-- Logo for mobile -->
+          <div class="lg:hidden flex items-center gap-x-2 mb-6">
+            <div class="flex items-center justify-center w-8 h-8 rounded-xl bg-[#7CFF00]">
+              <i class="fa-solid fa-bolt text-[#050B08] text-xl"></i>
+            </div>
+            <span class="font-display text-2xl font-semibold tracking-tighter">VoltiQ</span>
+          </div>
+
+          <!-- Segmented Toggle -->
+          <div class="segmented-control rounded-2xl p-1 flex mb-8 relative">
+            <button id="login-tab"
+                    class="segmented-btn flex-1 py-2.5 text-sm font-medium rounded-[14px] active text-[#050B08] bg-[#7CFF00]"
+                    onclick="switchTab('login')">
+              Log in
+            </button>
+            <button id="signup-tab"
+                    class="segmented-btn flex-1 py-2.5 text-sm font-medium rounded-[14px] text-[#D8E2DC]"
+                    onclick="switchTab('signup')">
+              Create account
+            </button>
+          </div>
+
+          <!-- LOGIN FORM -->
+          <div id="login-form">
+            <div class="mb-7">
+              <h2 class="font-display text-3xl font-semibold tracking-tighter text-white">Enter VoltiQ Command Center</h2>
+              <p class="text-[#8A9A8F] mt-1.5">Secure access to your real-time energy dashboard.</p>
+            </div>
+
+            <form id="login-form-element" onsubmit="handleLogin(event)">
+              <div class="space-y-5">
+                <!-- Email -->
+                <div>
+                  <label class="block text-xs font-medium tracking-widest text-[#8A9A8F] mb-1.5 ml-0.5">EMAIL ADDRESS</label>
+                  <div class="relative futuristic-input neon-border rounded-2xl px-4 flex items-center">
+                    <i class="fa-solid fa-envelope text-[#8A9A8F] mr-3 w-4" id="login-email-icon"></i>
+                    <input type="email" id="login-email" 
+                           class="flex-1 bg-transparent border-0 outline-none py-3.5 text-sm placeholder:text-[#6B7B73]" 
+                           placeholder="you@company.com" required
+                           oninput="validateEmail(this)">
+                  </div>
+                  <div id="login-email-error" class="text-[#FF4D4D] text-xs mt-1.5 hidden"></div>
+                </div>
+
+                <!-- Password -->
+                <div>
+                  <label class="block text-xs font-medium tracking-widest text-[#8A9A8F] mb-1.5 ml-0.5">PASSWORD</label>
+                  <div class="relative futuristic-input neon-border rounded-2xl px-4 flex items-center">
+                    <i class="fa-solid fa-lock text-[#8A9A8F] mr-3 w-4" id="login-password-icon"></i>
+                    <input type="password" id="login-password" 
+                           class="flex-1 bg-transparent border-0 outline-none py-3.5 text-sm placeholder:text-[#6B7B73]" 
+                           placeholder="••••••••••••" required>
+                    <button type="button" onclick="togglePassword('login-password', this)"
+                            class="text-[#8A9A8F] hover:text-[#7CFF00] transition-colors px-1">
+                      <i class="fa-solid fa-eye"></i>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="flex items-center justify-between text-sm">
+                  <label class="flex items-center gap-x-2 cursor-pointer">
+                    <input type="checkbox" class="accent-[#7CFF00] w-3.5 h-3.5">
+                    <span class="text-xs text-[#8A9A8F]">Remember this device</span>
+                  </label>
+                  <a href="#" class="text-xs text-[#7CFF00] hover:underline">Recover Access</a>
+                </div>
+
+                <!-- Login Button -->
+                <button type="submit" id="login-btn"
+                        class="premium-button w-full py-[17px] bg-[#7CFF00] hover:bg-[#5FD100] active:bg-[#4FB500] transition-all text-[#050B08] rounded-2xl font-semibold flex items-center justify-center gap-x-2 text-sm tracking-[0.2px]">
+                  <span id="login-btn-text">Enter Dashboard</span>
+                </button>
+              </div>
+            </form>
+
+            <div class="text-center mt-6">
+              <div class="text-xs text-[#8A9A8F]">Protected by VoltiQ Quantum Security</div>
+            </div>
+          </div>
+
+          <!-- SIGNUP / CREATE ACCOUNT FORM (Multi-step) -->
+          <div id="signup-form" class="hidden">
+            <div class="mb-6">
+              <h2 class="font-display text-3xl font-semibold tracking-tighter text-white">Activate Your VoltiQ Access</h2>
+              <p class="text-[#8A9A8F] mt-1">Create your energy profile and start monitoring smarter.</p>
+            </div>
+
+            <!-- Progress Steps -->
+            <div class="flex items-center justify-between mb-6 px-1">
+              <div class="flex items-center gap-1.5 text-xs">
+                <div onclick="goToStep(1)" class="cursor-pointer step-dot w-2.5 h-2.5 rounded-full bg-[#7CFF00]" id="step-dot-1"></div>
+                <div onclick="goToStep(2)" class="cursor-pointer step-dot w-2.5 h-2.5 rounded-full bg-[#1F2B24]" id="step-dot-2"></div>
+                <div onclick="goToStep(3)" class="cursor-pointer step-dot w-2.5 h-2.5 rounded-full bg-[#1F2B24]" id="step-dot-3"></div>
+                <div onclick="goToStep(4)" class="cursor-pointer step-dot w-2.5 h-2.5 rounded-full bg-[#1F2B24]" id="step-dot-4"></div>
+              </div>
+              <div class="text-[10px] text-[#8A9A8F] font-mono" id="step-counter">STEP 1 / 4</div>
+            </div>
+
+            <!-- STEP 1: Identity -->
+            <div id="step-1" class="step-content">
+              <div class="space-y-5">
+                <div>
+                  <label class="text-xs tracking-widest text-[#8A9A8F] block mb-1.5">FULL NAME</label>
+                  <input type="text" id="signup-name" class="futuristic-input neon-border w-full rounded-2xl px-4 py-3.5 text-sm placeholder:text-[#6B7B73] bg-transparent border border-[#1F2B24]" placeholder="Alex Rivera">
+                </div>
+                <div>
+                  <label class="text-xs tracking-widest text-[#8A9A8F] block mb-1.5">EMAIL ADDRESS</label>
+                  <input type="email" id="signup-email" class="futuristic-input neon-border w-full rounded-2xl px-4 py-3.5 text-sm placeholder:text-[#6B7B73] bg-transparent border border-[#1F2B24]" placeholder="you@energy.co">
+                </div>
+                <div>
+                  <label class="text-xs tracking-widest text-[#8A9A8F] block mb-1.5">PHONE NUMBER</label>
+                  <input type="tel" id="signup-phone" class="futuristic-input neon-border w-full rounded-2xl px-4 py-3.5 text-sm placeholder:text-[#6B7B73] bg-transparent border border-[#1F2B24]" placeholder="+1 (555) 284-9910">
+                </div>
+              </div>
+              <button onclick="nextStep()" class="premium-button mt-7 w-full py-[15px] bg-white/10 hover:bg-white/15 transition-all border border-[#7CFF00]/30 hover:border-[#7CFF00]/60 rounded-2xl text-sm font-medium flex items-center justify-center gap-x-2">
+                CONTINUE TO SECURITY
+                <i class="fa-solid fa-arrow-right"></i>
+              </button>
+            </div>
+
+            <!-- STEP 2: Security -->
+            <div id="step-2" class="step-content hidden">
+              <div class="space-y-5">
+                <div>
+                  <label class="text-xs tracking-widest text-[#8A9A8F] block mb-1.5">CREATE PASSWORD</label>
+                  <div class="relative futuristic-input neon-border rounded-2xl px-4 flex items-center">
+                    <i class="fa-solid fa-key text-[#8A9A8F] mr-3 w-4"></i>
+                    <input type="password" id="signup-password" oninput="updatePasswordStrength()" 
+                           class="flex-1 bg-transparent border-0 outline-none py-3.5 text-sm placeholder:text-[#6B7B73]" placeholder="••••••••••••">
+                    <button type="button" onclick="togglePassword('signup-password', this)" class="text-[#8A9A8F] px-1">
+                      <i class="fa-solid fa-eye"></i>
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label class="text-xs tracking-widest text-[#8A9A8F] block mb-1.5">CONFIRM PASSWORD</label>
+                  <div class="relative futuristic-input neon-border rounded-2xl px-4 flex items-center">
+                    <i class="fa-solid fa-key text-[#8A9A8F] mr-3 w-4"></i>
+                    <input type="password" id="signup-confirm" oninput="updatePasswordStrength()"
+                           class="flex-1 bg-transparent border-0 outline-none py-3.5 text-sm placeholder:text-[#6B7B73]" placeholder="••••••••••••">
+                  </div>
+                </div>
+
+                <!-- Password Strength -->
+                <div>
+                  <div class="flex items-center justify-between mb-2">
+                    <div class="text-xs text-[#8A9A8F]">SECURITY SCORE</div>
+                    <div class="flex items-center gap-2">
+                      <div class="text-xs font-mono font-semibold" id="security-score">62</div>
+                      <div class="w-7 h-7 relative">
+                        <svg class="w-7 h-7 -rotate-90" viewBox="0 0 28 28">
+                          <circle cx="14" cy="14" r="11" fill="none" stroke="#1F2B24" stroke-width="3.5"></circle>
+                          <circle id="security-ring" cx="14" cy="14" r="11" fill="none" stroke="#7CFF00" stroke-width="3.5" 
+                                  stroke-dasharray="69" stroke-dashoffset="26"></circle>
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="h-1.5 bg-[#1F2B24] rounded-full overflow-hidden">
+                    <div id="strength-bar" class="h-1.5 bg-gradient-to-r from-[#7CFF00] to-[#5FD100] transition-all" style="width: 62%"></div>
+                  </div>
+                </div>
+
+                <!-- Checklist -->
+                <div class="bg-[#050B08] rounded-2xl p-3.5 text-xs border border-[#1F2B24]">
+                  <div class="grid grid-cols-1 gap-y-1.5 text-[#8A9A8F]">
+                    <div id="check-length" class="flex items-center gap-2"><i class="fa-solid fa-check w-3 text-[#7CFF00]"></i> At least 8 characters</div>
+                    <div id="check-upper" class="flex items-center gap-2"><i class="fa-solid fa-check w-3 text-[#7CFF00]"></i> One uppercase letter</div>
+                    <div id="check-number" class="flex items-center gap-2"><i class="fa-solid fa-check w-3 text-[#7CFF00]"></i> One number</div>
+                    <div id="check-special" class="flex items-center gap-2"><i class="fa-solid fa-check w-3 text-[#7CFF00]"></i> One special character</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="flex gap-3 mt-7">
+                <button onclick="prevStep()" class="flex-1 py-[15px] bg-white/5 hover:bg-white/10 transition-all border border-[#1F2B24] rounded-2xl text-sm">BACK</button>
+                <button onclick="nextStep()" class="premium-button flex-1 py-[15px] bg-[#7CFF00] text-[#050B08] font-semibold rounded-2xl text-sm">CONTINUE</button>
+              </div>
+            </div>
+
+            <!-- STEP 3: Energy Profile -->
+            <div id="step-3" class="step-content hidden">
+              <div class="mb-5">
+                <div class="text-xs tracking-[1.5px] text-[#8A9A8F]">ENERGY PROFILE</div>
+                <div class="font-semibold text-xl mt-0.5">What do you want to monitor?</div>
+              </div>
+
+              <div class="grid grid-cols-2 gap-3">
+                <div onclick="selectEnergyProfile(this, 'Solar System')" class="energy-option cursor-pointer glass border border-[#1F2B24] rounded-2xl p-4 flex flex-col items-center text-center">
+                  <i class="fa-solid fa-solar-panel text-3xl text-[#7CFF00] mb-2.5"></i>
+                  <div class="font-medium text-sm">Solar System</div>
+                </div>
+                <div onclick="selectEnergyProfile(this, 'Inverter Fleet')" class="energy-option cursor-pointer glass border border-[#1F2B24] rounded-2xl p-4 flex flex-col items-center text-center">
+                  <i class="fa-solid fa-microchip text-3xl text-[#7CFF00] mb-2.5"></i>
+                  <div class="font-medium text-sm">Inverter Fleet</div>
+                </div>
+                <div onclick="selectEnergyProfile(this, 'Smart Home Energy')" class="energy-option cursor-pointer glass border border-[#1F2B24] rounded-2xl p-4 flex flex-col items-center text-center">
+                  <i class="fa-solid fa-home text-3xl text-[#7CFF00] mb-2.5"></i>
+                  <div class="font-medium text-sm">Smart Home Energy</div>
+                </div>
+                <div onclick="selectEnergyProfile(this, 'Commercial Facility')" class="energy-option cursor-pointer glass border border-[#1F2B24] rounded-2xl p-4 flex flex-col items-center text-center">
+                  <i class="fa-solid fa-building text-3xl text-[#7CFF00] mb-2.5"></i>
+                  <div class="font-medium text-sm">Commercial Facility</div>
+                </div>
+              </div>
+
+              <div class="flex gap-3 mt-7">
+                <button onclick="prevStep()" class="flex-1 py-[15px] bg-white/5 hover:bg-white/10 transition-all border border-[#1F2B24] rounded-2xl text-sm">BACK</button>
+                <button onclick="nextStep()" class="premium-button flex-1 py-[15px] bg-[#7CFF00] text-[#050B08] font-semibold rounded-2xl text-sm" id="step3-next">CREATE ACCOUNT</button>
+              </div>
+            </div>
+
+            <!-- STEP 4: Activation (no OTP) -->
+            <div id="step-4" class="step-content hidden">
+              <div class="py-4 text-center">
+                <div class="mx-auto w-16 h-16 rounded-full border border-[#7CFF00]/30 flex items-center justify-center mb-6">
+                  <i class="fa-solid fa-shield-halved text-[#7CFF00] text-3xl"></i>
+                </div>
+                
+                <div id="activation-status" class="font-display text-2xl font-semibold tracking-tight mb-2">Creating your energy profile...</div>
+                
+                <div class="text-[#8A9A8F] text-sm max-w-[220px] mx-auto" id="activation-sub">
+                  Securing your dashboard access.
+                </div>
+
+                <div class="mt-8">
+                  <div class="h-px bg-[#1F2B24] w-2/3 mx-auto"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer hint -->
+        <div class="mt-6 text-center text-xs text-[#6B7B73]">
+          VoltiQ • 2026 • Enterprise Energy Platform
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cinematic Success Overlay -->
+  <div id="success-overlay" class="hidden fixed inset-0 bg-[#050B08] z-[100] flex items-center justify-center">
+    <div class="text-center max-w-sm px-6">
+      <div id="success-icon" class="mx-auto w-20 h-20 mb-7 flex items-center justify-center">
+        <div class="w-20 h-20 rounded-full border-[6px] border-[#7CFF00] flex items-center justify-center">
+          <i class="fa-solid fa-check text-[#7CFF00] text-4xl"></i>
+        </div>
+      </div>
+      
+      <div id="success-headline" class="font-display text-5xl font-semibold tracking-[-2.2px] text-white mb-2">ACCESS GRANTED</div>
+      <div id="success-sub" class="text-[#8A9A8F]">Loading your energy dashboard...</div>
+      
+      <div class="mt-8 text-xs tracking-[2px] text-[#7CFF00]">VOLTIQ COMMAND CENTER</div>
+    </div>
+  </div>
+
+  <!-- Dashboard Preview (after success) -->
+  <div id="dashboard-preview" class="hidden fixed inset-0 bg-[#050B08] z-[110] flex flex-col">
+    <div class="border-b border-[#1F2B24] px-8 py-4 flex items-center justify-between">
+      <div class="flex items-center gap-x-3">
+        <div class="flex items-center justify-center w-9 h-9 rounded-xl bg-[#7CFF00]">
+          <i class="fa-solid fa-bolt text-[#050B08] text-2xl"></i>
+        </div>
+        <div class="font-display text-2xl tracking-tighter font-semibold">VoltiQ</div>
+      </div>
+      
+      <div class="flex items-center gap-x-3 text-sm">
+        <div class="flex items-center bg-[#0C1712] px-3 py-1.5 rounded-2xl border border-[#1F2B24]">
+          <div class="w-2 h-2 bg-[#7CFF00] rounded-full live-dot mr-2"></div>
+          <span class="text-[#7CFF00] text-xs font-medium">LIVE • 3,481 NODES</span>
+        </div>
+        <div class="flex items-center gap-x-2">
+          <div class="w-8 h-8 bg-[#10210D] rounded-full flex items-center justify-center text-xs font-medium">AR</div>
+          <span class="text-sm">Alex Rivera</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex-1 p-8 flex flex-col">
+      <div class="max-w-5xl">
+        <div class="flex items-end justify-between mb-6">
+          <div>
+            <div class="text-4xl font-semibold tracking-tight">Good morning, Alex.</div>
+            <div class="text-[#8A9A8F]">Your energy grid is operating at peak performance.</div>
+          </div>
+          <button onclick="restartDemo()" class="text-xs px-4 py-2 border border-[#1F2B24] hover:bg-[#10210D] rounded-2xl flex items-center gap-x-2 text-[#8A9A8F]">
+            <i class="fa-solid fa-redo"></i>
+            <span>Restart Demo</span>
+          </button>
+        </div>
+
+        <!-- Mini Dashboard Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <div class="glass rounded-3xl p-6">
+            <div class="text-xs text-[#8A9A8F]">TOTAL OUTPUT TODAY</div>
+            <div class="font-mono text-4xl font-semibold mt-2">142.8 <span class="text-base text-[#7CFF00]">MWh</span></div>
+            <div class="text-xs mt-4 flex items-center gap-x-1 text-[#7CFF00]">
+              <i class="fa-solid fa-arrow-trend-up"></i> <span>+14% from yesterday</span>
+            </div>
+          </div>
+
+          <div class="glass rounded-3xl p-6">
+            <div class="flex justify-between items-start">
+              <div>
+                <div class="text-xs text-[#8A9A8F]">ACTIVE INVERTERS</div>
+                <div class="font-mono text-4xl font-semibold mt-1">284</div>
+              </div>
+              <div class="px-3 py-1 bg-[#7CFF00]/10 text-[#7CFF00] text-xs rounded-xl">ALL ONLINE</div>
+            </div>
+            <div class="h-2.5 bg-[#1F2B24] rounded-full mt-6">
+              <div class="h-2.5 bg-[#7CFF00] rounded-full w-[94%]" style="width: 94%"></div>
+            </div>
+          </div>
+
+          <div class="glass rounded-3xl p-6">
+            <div class="text-xs text-[#8A9A8F] mb-1">GRID HEALTH</div>
+            <div class="flex items-baseline">
+              <div class="font-mono text-5xl font-semibold">99.4</div>
+              <div class="text-[#7CFF00] ml-1">%</div>
+            </div>
+            <div class="text-xs text-[#7CFF00] mt-1">EXCELLENT • 4 critical alerts resolved</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast container -->
+  <div id="toast-container" class="fixed bottom-6 right-6 z-[200] flex flex-col gap-2"></div>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    // Tailwind script
+    function initializeTailwind() {
+      document.documentElement.style.setProperty('--accent', '#7CFF00');
+    }
+
+    // ===== PARTICLES + GRID ANIMATION =====
+    function createParticles() {
+      const container = document.getElementById('particles-container');
+      const particleCount = 28;
+
+      for (let i = 0; i < particleCount; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'particle';
+        
+        const size = Math.random() * 3.5 + 1.5;
+        particle.style.width = `${size}px`;
+        particle.style.height = `${size}px`;
+        
+        particle.style.left = `${Math.random() * 100}%`;
+        particle.style.top = `${Math.random() * 100}%`;
+        
+        const duration = Math.random() * 9000 + 11000;
+        particle.style.animation = `particleFloat ${duration}ms linear infinite`;
+        particle.style.animationDelay = `-${Math.random() * 15000}ms`;
+        
+        container.appendChild(particle);
+      }
+    }
+
+    // ===== TERMINAL TYPING =====
+    let terminalInterval = null;
+    
+    function startTerminal() {
+      const output = document.getElementById('terminal-output');
+      const messages = [
+        "root@voltiq:~$ checking inverter nodes...",
+        "root@voltiq:~$ grid stable",
+        "root@voltiq:~$ solar array nominal",
+        "root@voltiq:~$ awaiting secure access...",
+        "root@voltiq:~$ all systems nominal"
+      ];
+      
+      let msgIndex = 0;
+      let charIndex = 0;
+      
+      function typeNext() {
+        if (msgIndex >= messages.length) msgIndex = 0;
+        
+        const currentMsg = messages[msgIndex];
+        
+        if (charIndex < currentMsg.length) {
+          output.textContent = currentMsg.substring(0, charIndex + 1);
+          charIndex++;
+          setTimeout(typeNext, 38);
+        } else {
+          setTimeout(() => {
+            charIndex = 0;
+            msgIndex++;
+            output.textContent = '';
+            setTimeout(typeNext, 420);
+          }, 1650);
+        }
+      }
+      
+      output.textContent = '';
+      typeNext();
+    }
+
+    // ===== LIVE METRICS ANIMATION =====
+    function animateMetrics() {
+      const uptimeEl = document.getElementById('uptime');
+      const solarEl = document.getElementById('solar-output');
+      const consumptionEl = document.getElementById('consumption');
+      const gridEl = document.getElementById('grid-export');
+      const gaugeEl = document.getElementById('gauge-circle');
+      const efficiencyEl = document.getElementById('efficiency');
+
+      let uptime = 98.6;
+      let solar = 10.2;
+      let consumption = 8.7;
+      let grid = 1.5;
+      let efficiency = 86;
+
+      setInterval(() => {
+        // Small realistic fluctuations
+        uptime = Math.max(97.8, Math.min(99.4, uptime + (Math.random() - 0.5) * 0.08));
+        solar = Math.max(7.8, Math.min(14.4, solar + (Math.random() - 0.5) * 0.35));
+        consumption = Math.max(5.9, Math.min(11.8, consumption + (Math.random() - 0.5) * 0.28));
+        grid = Math.max(0.4, Math.min(3.8, grid + (Math.random() - 0.5) * 0.14));
+        efficiency = Math.max(81, Math.min(96, efficiency + (Math.random() - 0.5) * 0.7));
+
+        uptimeEl.textContent = uptime.toFixed(1);
+        solarEl.textContent = solar.toFixed(1);
+        consumptionEl.textContent = consumption.toFixed(1);
+        gridEl.textContent = grid.toFixed(1);
+        efficiencyEl.textContent = Math.floor(efficiency);
+
+        // Update gauge
+        const offset = 113 - (efficiency / 100 * 113);
+        gaugeEl.setAttribute('stroke-dashoffset', offset);
+      }, 1850);
+    }
+
+    // ===== 3D TILT EFFECT =====
+    function addTiltEffect() {
+      const card = document.getElementById('live-dashboard-card');
+      
+      card.addEventListener('mousemove', (e) => {
+        const rect = card.getBoundingClientRect();
+        const x = ((e.clientX - rect.left) / rect.width) - 0.5;
+        const y = ((e.clientY - rect.top) / rect.height) - 0.5;
+        
+        const rotateX = y * -12;
+        const rotateY = x * 14;
+        
+        card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+      });
+      
+      card.addEventListener('mouseleave', () => {
+        card.style.transition = 'transform 0.6s cubic-bezier(0.23, 1, 0.32, 1)';
+        card.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg)';
+        
+        setTimeout(() => {
+          card.style.transition = 'transform 0.3s cubic-bezier(0.23, 1, 0.32, 1)';
+        }, 600);
+      });
+    }
+
+    // ===== MOUSE FOLLOWING GLOW =====
+    function addMouseGlow() {
+      const card = document.getElementById('auth-card');
+      
+      document.addEventListener('mousemove', (e) => {
+        const rect = card.getBoundingClientRect();
+        const x = ((e.clientX - rect.left) / rect.width) * 100;
+        const y = ((e.clientY - rect.top) / rect.height) * 100;
+        
+        card.style.setProperty('--mouse-x', `${x}%`);
+        card.style.setProperty('--mouse-y', `${y}%`);
+        
+        // Add dynamic glow
+        card.style.boxShadow = `
+          0 25px 50px -12px rgb(0 0 0 / 0.5),
+          0 10px 10px -6px rgb(0 0 0 / 0.4),
+          0 0 0 1px rgba(124, 255, 0, 0.1),
+          ${Math.max(0, (x - 50) / 3)}px ${Math.max(0, (y - 50) / 4)}px 35px rgba(124, 255, 0, 0.06)
+        `;
+      });
+    }
+
+    // ===== TAB SWITCHING =====
+    let currentTab = 'login';
+
+    function switchTab(tab) {
+      const loginForm = document.getElementById('login-form');
+      const signupForm = document.getElementById('signup-form');
+      const loginTab = document.getElementById('login-tab');
+      const signupTab = document.getElementById('signup-tab');
+
+      if (tab === 'login') {
+        loginForm.classList.remove('hidden');
+        signupForm.classList.add('hidden');
+        
+        loginTab.classList.add('active', 'bg-[#7CFF00]', 'text-[#050B08]');
+        loginTab.classList.remove('text-[#D8E2DC]');
+        
+        signupTab.classList.remove('active', 'bg-[#7CFF00]', 'text-[#050B08]');
+        signupTab.classList.add('text-[#D8E2DC]');
+        
+        currentTab = 'login';
+      } else {
+        loginForm.classList.add('hidden');
+        signupForm.classList.remove('hidden');
+        
+        signupTab.classList.add('active', 'bg-[#7CFF00]', 'text-[#050B08]');
+        signupTab.classList.remove('text-[#D8E2DC]');
+        
+        loginTab.classList.remove('active', 'bg-[#7CFF00]', 'text-[#050B08]');
+        loginTab.classList.add('text-[#D8E2DC]');
+        
+        currentTab = 'signup';
+        resetSignupSteps();
+      }
+    }
+
+    // ===== SIGNUP STEPS =====
+    let currentStep = 1;
+    let selectedProfile = null;
+
+    function resetSignupSteps() {
+      currentStep = 1;
+      document.querySelectorAll('.step-content').forEach(el => el.classList.add('hidden'));
+      document.getElementById('step-1').classList.remove('hidden');
+      updateStepUI();
+    }
+
+    function updateStepUI() {
+      document.getElementById('step-counter').textContent = `STEP ${currentStep} / 4`;
+      
+      for (let i = 1; i <= 4; i++) {
+        const dot = document.getElementById(`step-dot-${i}`);
+        if (dot) {
+          if (i < currentStep) {
+            dot.classList.add('bg-[#7CFF00]');
+            dot.classList.remove('bg-[#1F2B24]');
+          } else if (i === currentStep) {
+            dot.classList.add('bg-[#7CFF00]');
+            dot.classList.remove('bg-[#1F2B24]');
+          } else {
+            dot.classList.remove('bg-[#7CFF00]');
+            dot.classList.add('bg-[#1F2B24]');
+          }
+        }
+      }
+    }
+
+    function nextStep() {
+      const currentContent = document.getElementById(`step-${currentStep}`);
+      
+      if (currentStep === 1) {
+        // Validate step 1
+        const name = document.getElementById('signup-name').value.trim();
+        const email = document.getElementById('signup-email').value.trim();
+        
+        if (!name || !email) {
+          showToast('Identity node missing. Please complete all fields.', true);
+          return;
+        }
+      }
+      
+      if (currentStep === 2) {
+        const pass = document.getElementById('signup-password').value;
+        const confirm = document.getElementById('signup-confirm').value;
+        
+        if (pass.length < 8 || pass !== confirm) {
+          showToast('Security level too low. Please verify your access key.', true);
+          return;
+        }
+      }
+      
+      if (currentStep === 3 && !selectedProfile) {
+        showToast('Please select an energy profile to monitor.', true);
+        return;
+      }
+
+      currentContent.classList.add('hidden');
+      currentStep++;
+      
+      const nextContent = document.getElementById(`step-${currentStep}`);
+      nextContent.classList.remove('hidden');
+      
+      updateStepUI();
+      
+      if (currentStep === 4) {
+        startAccountActivation();
+      }
+    }
+
+    function prevStep() {
+      const currentContent = document.getElementById(`step-${currentStep}`);
+      currentContent.classList.add('hidden');
+      
+      currentStep--;
+      
+      const prevContent = document.getElementById(`step-${currentStep}`);
+      prevContent.classList.remove('hidden');
+      
+      updateStepUI();
+    }
+
+    function updatePasswordStrength() {
+      const password = document.getElementById('signup-password').value;
+      const scoreEl = document.getElementById('security-score');
+      const bar = document.getElementById('strength-bar');
+      const ring = document.getElementById('security-ring');
+
+      let score = 0;
+      
+      if (password.length >= 8) score += 25;
+      if (/[A-Z]/.test(password)) score += 25;
+      if (/[0-9]/.test(password)) score += 25;
+      if (/[^A-Za-z0-9]/.test(password)) score += 25;
+
+      scoreEl.textContent = score;
+      
+      // Update bar
+      bar.style.width = `${score}%`;
+      
+      // Update ring
+      const offset = 69 - (score / 100 * 69);
+      ring.setAttribute('stroke-dashoffset', offset);
+
+      // Checklist
+      document.getElementById('check-length').style.color = password.length >= 8 ? '#7CFF00' : '#8A9A8F';
+      document.getElementById('check-upper').style.color = /[A-Z]/.test(password) ? '#7CFF00' : '#8A9A8F';
+      document.getElementById('check-number').style.color = /[0-9]/.test(password) ? '#7CFF00' : '#8A9A8F';
+      document.getElementById('check-special').style.color = /[^A-Za-z0-9]/.test(password) ? '#7CFF00' : '#8A9A8F';
+    }
+
+    function selectEnergyProfile(element, profileName) {
+      document.querySelectorAll('.energy-option').forEach(el => el.classList.remove('selected'));
+      element.classList.add('selected');
+      selectedProfile = profileName;
+    }
+
+    // ===== ACCOUNT ACTIVATION SEQUENCE (NO OTP) =====
+    function startAccountActivation() {
+      const statusEl = document.getElementById('activation-status');
+      const subEl = document.getElementById('activation-sub');
+      
+      const steps = [
+        { text: "Creating your energy profile...", sub: "Securing your dashboard access..." },
+        { text: "Securing your dashboard access...", sub: "Configuring monitoring modules..." },
+        { text: "Configuring monitoring modules...", sub: "Connecting to the smart grid..." },
+        { text: "Account activated.", sub: "Welcome to VoltiQ." }
+      ];
+      
+      let idx = 0;
+      
+      function runStep() {
+        if (idx >= steps.length) {
+          setTimeout(() => {
+            showCinematicSuccess();
+          }, 1250);
+          return;
+        }
+        
+        statusEl.style.transition = 'opacity 0.3s';
+        statusEl.style.opacity = '0';
+        
+        setTimeout(() => {
+          statusEl.textContent = steps[idx].text;
+          subEl.textContent = steps[idx].sub;
+          statusEl.style.opacity = '1';
+          
+          idx++;
+          
+          const delay = (idx === steps.length) ? 1100 : 1350;
+          setTimeout(runStep, delay);
+        }, 280);
+      }
+      
+      runStep();
+    }
+
+    // ===== LOGIN HANDLER =====
+    let loginAttempts = 0;
+
+    function handleLogin(e) {
+      e.preventDefault();
+      
+      const email = document.getElementById('login-email').value;
+      const password = document.getElementById('login-password').value;
+      const btn = document.getElementById('login-btn');
+      const btnText = document.getElementById('login-btn-text');
+      
+      if (!email || !password) {
+        showToast('Identity node missing. Please enter your credentials.', true);
+        return;
+      }
+      
+      // Live validation already handles most cases
+      btn.disabled = true;
+      const originalText = btnText.textContent;
+      
+      const sequence = [
+        "Authenticating...",
+        "Verifying credentials...",
+        "Opening dashboard...",
+        "Access granted."
+      ];
+      
+      let seqIndex = 0;
+      
+      function runSequence() {
+        if (seqIndex >= sequence.length) {
+          btnText.textContent = "Access granted.";
+          
+          setTimeout(() => {
+            showCinematicSuccess();
+          }, 520);
+          return;
+        }
+        
+        btnText.textContent = sequence[seqIndex];
+        seqIndex++;
+        
+        const delay = (seqIndex === 1) ? 650 : (seqIndex === 2) ? 820 : 720;
+        setTimeout(runSequence, delay);
+      }
+      
+      runSequence();
+    }
+
+    function validateEmail(input) {
+      const errorEl = document.getElementById('login-email-error');
+      const icon = document.getElementById('login-email-icon');
+      
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      
+      if (input.value.length > 3) {
+        if (!emailRegex.test(input.value)) {
+          errorEl.textContent = "Identity node missing. Please enter a valid email address.";
+          errorEl.classList.remove('hidden');
+          icon.style.color = '#FF4D4D';
+        } else {
+          errorEl.classList.add('hidden');
+          icon.style.color = '#7CFF00';
+        }
+      } else {
+        errorEl.classList.add('hidden');
+        icon.style.color = '#8A9A8F';
+      }
+    }
+
+    function togglePassword(inputId, btn) {
+      const input = document.getElementById(inputId);
+      const icon = btn.querySelector('i');
+      
+      if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+      } else {
+        input.type = 'password';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+      }
+    }
+
+    // ===== CINEMATIC SUCCESS + DASHBOARD TRANSITION =====
+    function showCinematicSuccess() {
+      const overlay = document.getElementById('success-overlay');
+      const authCard = document.getElementById('auth-card');
+      
+      overlay.classList.remove('hidden');
+      overlay.classList.add('flex');
+      
+      // Hide auth card with fade
+      authCard.style.transition = 'all 0.4s cubic-bezier(0.23, 1, 0.32, 1)';
+      authCard.style.opacity = '0';
+      authCard.style.transform = 'translateY(15px)';
+      
+      setTimeout(() => {
+        // After cinematic, show dashboard
+        overlay.style.transition = 'opacity 0.6s ease';
+        overlay.style.opacity = '0';
+        
+        setTimeout(() => {
+          overlay.classList.remove('flex');
+          overlay.classList.add('hidden');
+          overlay.style.opacity = '1';
+          
+          // Show dashboard preview
+          document.getElementById('dashboard-preview').classList.remove('hidden');
+          
+          // Optional: log that user "entered" the command center
+          console.log('%c[VoltiQ] User entered Energy Command Center', 'color:#7CFF00');
+          
+          // Bonus: animate a couple metrics in dashboard
+          setTimeout(() => {
+            const metrics = document.querySelectorAll('#dashboard-preview .font-mono');
+            metrics.forEach((el, i) => {
+              setTimeout(() => {
+                el.style.transition = 'all 0.8s cubic-bezier(0.23, 1, 0.32, 1)';
+                el.style.transform = 'translateY(-1px)';
+                setTimeout(() => {
+                  if (el) el.style.transform = 'translateY(0)';
+                }, 700);
+              }, i * 240);
+            });
+          }, 800);
+        }, 650);
+      }, 1850);
+    }
+
+    // ===== TOAST NOTIFICATIONS =====
+    function showToast(message, isError = false) {
+      const container = document.getElementById('toast-container');
+      
+      const toast = document.createElement('div');
+      toast.className = `px-4 py-3 rounded-2xl border flex items-start gap-x-3 max-w-[300px] shadow-xl text-sm ${isError ? 'bg-[#2A0F0F] border-[#FF4D4D]/30 text-[#FF9E9E]' : 'bg-[#0C1712] border-[#7CFF00]/20 text-[#D8E2DC]'}`;
+      
+      toast.innerHTML = `
+        <div class="pt-0.5">
+          <i class="fa-solid ${isError ? 'fa-exclamation-circle text-[#FF4D4D]' : 'fa-check-circle text-[#7CFF00]'}"></i>
+        </div>
+        <div class="flex-1 leading-tight">${message}</div>
+      `;
+      
+      container.appendChild(toast);
+      
+      setTimeout(() => {
+        toast.style.transition = 'all 0.3s ease';
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 250);
+      }, 4200);
+    }
+
+    // ===== FORM FOCUS EFFECTS =====
+    function addInputFocusEffects() {
+      const inputs = document.querySelectorAll('.futuristic-input input, .futuristic-input');
+      
+      inputs.forEach(input => {
+        const parent = input.closest('.futuristic-input') || input;
+        
+        input.addEventListener('focus', () => {
+          parent.style.borderColor = '#7CFF00';
+          parent.style.boxShadow = '0 0 0 1px #7CFF00, 0 0 20px rgba(124, 255, 0, 0.15)';
+        });
+        
+        input.addEventListener('blur', () => {
+          parent.style.borderColor = 'rgba(124, 255, 0, 0.15)';
+          parent.style.boxShadow = '0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255,255,255,0.08)';
+        });
+      });
+    }
+
+    // ===== ENERGY PROFILE SELECTION =====
+    function initEnergyProfile() {
+      // Already handled in selectEnergyProfile()
+    }
+
+    // ===== KEYBOARD SHORTCUTS (Premium Feel) =====
+    function addKeyboardShortcuts() {
+      document.addEventListener('keydown', (e) => {
+        if (e.metaKey && e.key === "Enter") {
+          const loginBtn = document.getElementById('login-btn');
+          if (loginBtn && !loginBtn.disabled && !document.getElementById('login-form').classList.contains('hidden')) {
+            e.preventDefault();
+            loginBtn.click();
+          }
+        }
+        
+        if (e.key === "/" && document.activeElement.tagName === "BODY") {
+          e.preventDefault();
+          const emailInput = document.getElementById('login-email');
+          if (emailInput) emailInput.focus();
+        }
+      });
+      
+      // Show hint
+      setTimeout(() => {
+        const hint = document.createElement('div');
+        hint.className = 'fixed bottom-4 left-1/2 -translate-x-1/2 text-[10px] text-[#6B7B73] hidden lg:block';
+        hint.innerHTML = 'Press <span class="font-mono">⌘ + Enter</span> to authenticate';
+        // Only show if on login
+        if (!document.getElementById('signup-form').classList.contains('hidden')) return;
+      }, 8000);
+    }
+
+    // ===== INITIALIZE EVERYTHING =====
+    function initializeVoltiQ() {
+      initializeTailwind();
+      
+      // Background effects
+      createParticles();
+      startTerminal();
+      animateMetrics();
+      addTiltEffect();
+      addMouseGlow();
+      
+      // Interactions
+      addInputFocusEffects();
+      initEnergyProfile();
+      addKeyboardShortcuts();
+      
+      // Default to login tab
+      document.getElementById('login-tab').classList.add('active', 'bg-[#7CFF00]', 'text-[#050B08]');
+      
+      // Live email validation on blur for extra polish
+      const loginEmail = document.getElementById('login-email');
+      if (loginEmail) {
+        loginEmail.addEventListener('blur', () => {
+          if (loginEmail.value.length > 0) {
+            validateEmail(loginEmail);
+          }
+        });
+      }
+      
+      // Initial toast (subtle welcome)
+      setTimeout(() => {
+        // Uncomment for demo: showToast("Welcome to the VoltiQ Energy Command Center.");
+      }, 4200);
+      
+      // Make sure the live dashboard card has premium feel
+      const liveCard = document.getElementById('live-dashboard-card');
+      if (liveCard) {
+        liveCard.addEventListener('mouseenter', () => {
+          liveCard.style.boxShadow = '0 25px 50px -12px rgb(0 0 0 / 0.4), 0 0 0 1px #7CFF00';
+        });
+        liveCard.addEventListener('mouseleave', () => {
+          liveCard.style.boxShadow = '';
+        });
+      }
+      
+      // Easter egg: click logo to pulse particles
+      const logo = document.querySelector('.fa-bolt');
+      if (logo) {
+        logo.addEventListener('click', () => {
+          const container = document.getElementById('particles-container');
+          container.style.transition = 'all 0.3s';
+          container.style.opacity = '0.3';
+          
+          setTimeout(() => {
+            container.style.opacity = '1';
+          }, 420);
+        });
+      }
+      
+      // Preload some values in case
+      console.log('%c[VoltiQ] Premium Energy Command Center initialized. All systems nominal.', 'color:#5FD100; font-size: 9px');
+    }
+
+    // Restart demo function (for dashboard)
+    window.restartDemo = function() {
+      const dashboard = document.getElementById('dashboard-preview');
+      const authCard = document.getElementById('auth-card');
+      
+      dashboard.classList.add('hidden');
+      authCard.style.opacity = '1';
+      authCard.style.transform = '';
+      
+      // Reset everything
+      document.getElementById('login-form').classList.remove('hidden');
+      document.getElementById('signup-form').classList.add('hidden');
+      
+      document.getElementById('login-tab').classList.add('active', 'bg-[#7CFF00]', 'text-[#050B08]');
+      document.getElementById('signup-tab').classList.remove('active', 'bg-[#7CFF00]', 'text-[#050B08]');
+      
+      // Clear forms
+      document.querySelectorAll('input').forEach(i => i.value = '');
+      document.querySelectorAll('.energy-option').forEach(el => el.classList.remove('selected'));
+      
+      currentStep = 1;
+      selectedProfile = null;
+      
+      switchTab('login');
+    };
+
+    // Boot
+    window.onload = initializeVoltiQ;
+  </script>
+</body>
+</html>
