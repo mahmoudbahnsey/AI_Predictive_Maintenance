@@ -254,10 +254,10 @@ export function AuthProvider({ children }) {
     } catch (error) {
       window.sessionStorage.removeItem('voltiq.googleRedirectStarted');
       if (error.code === 'auth/unauthorized-domain') {
-        throw new Error('This domain is not authorized for Google sign-in in Firebase Authentication.');
+        throw new Error('This domain is not authorized for Google sign-in in Firebase Authentication.', { cause: error });
       }
       if (error.code === 'auth/network-request-failed') {
-        throw new Error('Google sign-in could not reach Firebase. Check the connection and try again.');
+        throw new Error('Google sign-in could not reach Firebase. Check the connection and try again.', { cause: error });
       }
       throw error;
     }
@@ -348,6 +348,28 @@ export function AuthProvider({ children }) {
 
   const canAccessAdmin = () => isAdmin && isApproved;
 
+  // Update display name everywhere: Firebase Auth (for immediate header) + Realtime DB profile (source of truth)
+  const updateDisplayName = async (newName) => {
+    if (!user || !newName?.trim()) return false;
+    const trimmed = newName.trim();
+    try {
+      // Sync to Firebase Auth user (header reads user.displayName directly)
+      if (auth.currentUser) {
+        await updateProfile(auth.currentUser, { displayName: trimmed });
+      }
+      // Sync to Realtime DB (userProfile and listeners everywhere)
+      const profileRef = ref(db, `users/${user.uid}`);
+      await update(profileRef, {
+        displayName: trimmed,
+        updatedAt: serverTimestamp(),
+      });
+      return true;
+    } catch (error) {
+      console.error('Failed to update display name everywhere:', error);
+      return false;
+    }
+  };
+
   const value = {
     user, userProfile,
     loading: loading || profileLoading,
@@ -357,6 +379,7 @@ export function AuthProvider({ children }) {
     logout,
     forceLogout,
     resetPassword, logAction,
+    updateDisplayName,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -1,25 +1,23 @@
 import { motion } from 'framer-motion';
-import { useState } from 'react';
-import { initialSettingsState } from '../../data/mockSettingsData';
 
-function PremiumNumberInput({ defaultValue, onChange, style = {} }) {
-  const [val, setVal] = useState(defaultValue || 0);
+function PremiumNumberInput({ value, onChange, style = {} }) {
+  const val = value ?? 0;
+
+  const emit = (newVal) => {
+    onChange({ target: { value: newVal } });
+  };
 
   const handleIncrement = () => {
     const newVal = Number(val) + 1;
-    setVal(newVal);
-    onChange({ target: { value: newVal } });
+    emit(newVal);
   };
 
   const handleDecrement = () => {
     const newVal = Number(val) - 1;
-    setVal(newVal);
-    onChange({ target: { value: newVal } });
+    emit(newVal);
   };
 
   const handleInputChange = (e) => {
-    const newVal = e.target.value;
-    setVal(newVal);
     onChange(e);
   };
 
@@ -112,32 +110,59 @@ function PremiumNumberInput({ defaultValue, onChange, style = {} }) {
   );
 }
 
-export default function UnitsLimitsThresholdControl({ onChange }) {
-  const { thresholds } = initialSettingsState;
+export default function UnitsLimitsThresholdControl({ onChange, thresholds, onUpdateThresholds, isAdmin }) {
+  // thresholds prop is the REAL data from Firebase (or fallback)
+  const current = thresholds || { tempWarning: 65, tempCritical: 85, voltWarning: 110, offlineTimeout: 15 };
+
+  const handleFieldChange = (field) => (e) => {
+    const newVal = Number(e.target.value);
+    const updated = { ...current, [field]: newVal };
+    if (onUpdateThresholds) {
+      onUpdateThresholds(updated);
+    }
+    if (onChange) onChange();
+  };
 
   return (
     <motion.div className="cfg-panel" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}>
-      <h2 className="cfg-title">System Limits & Units</h2>
+      <h2 className="cfg-title">System Limits & Units {isAdmin ? '' : <span style={{fontSize:'10px',opacity:0.6}}>(view only — admin can tune)</span>}</h2>
       
       <div className="cfg-grid-2">
         <div className="cfg-field">
           <label className="cfg-label">High Temp Warning (°C)</label>
-          <PremiumNumberInput defaultValue={thresholds.tempWarning} onChange={onChange} style={{ borderColor: 'var(--color-warning)' }} />
-          <span style={{ fontSize: '10px', color: '#a8b5ae', marginTop: '4px', display: 'block' }}>Warning temperature limit.</span>
+          <PremiumNumberInput 
+            value={current.tempWarning} 
+            onChange={handleFieldChange('tempWarning')} 
+            style={{ borderColor: 'var(--color-warning)' }} 
+          />
+          <span style={{ fontSize: '10px', color: '#a8b5ae', marginTop: '4px', display: 'block' }}>Warning temperature limit. Persisted in real-time to Firebase.</span>
         </div>
         <div className="cfg-field">
           <label className="cfg-label">High Temp Critical (°C)</label>
-          <PremiumNumberInput defaultValue={thresholds.tempCritical} onChange={onChange} style={{ borderColor: 'var(--color-critical)' }} />
-          <span style={{ fontSize: '10px', color: '#a8b5ae', marginTop: '4px', display: 'block' }}>Critical danger limit.</span>
+          <PremiumNumberInput 
+            value={current.tempCritical} 
+            onChange={handleFieldChange('tempCritical')} 
+            style={{ borderColor: 'var(--color-critical)' }} 
+          />
+          <span style={{ fontSize: '10px', color: '#a8b5ae', marginTop: '4px', display: 'block' }}>Critical danger limit. Persisted in real-time to Firebase.</span>
         </div>
         <div className="cfg-field">
           <label className="cfg-label">Low Voltage Warning (V)</label>
-          <PremiumNumberInput defaultValue={thresholds.voltWarning} onChange={onChange} />
+          <PremiumNumberInput 
+            value={current.voltWarning} 
+            onChange={handleFieldChange('voltWarning')} 
+          />
         </div>
         <div className="cfg-field">
           <label className="cfg-label">Offline Timeout (Mins)</label>
-          <PremiumNumberInput defaultValue={thresholds.offlineTimeout} onChange={onChange} />
+          <PremiumNumberInput 
+            value={current.offlineTimeout} 
+            onChange={handleFieldChange('offlineTimeout')} 
+          />
         </div>
+      </div>
+      <div style={{ marginTop: 12, fontSize: '10px', color: '#5a6b63' }}>
+        These values feed the live fault detection engine and alerts. Changes saved via the Save flow are immediately available to the entire fleet command surface.
       </div>
     </motion.div>
   );

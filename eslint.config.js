@@ -5,7 +5,15 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist']),
+  globalIgnores([
+    'dist',
+    'functions/**',
+    'add-sri.js',
+    'createAdmin.js',
+    'updateUser.js',
+    'vite*.log',
+    '**/*.html' // static prototypes
+  ]),
   {
     files: ['**/*.{js,jsx}'],
     extends: [
@@ -18,4 +26,11 @@ export default defineConfig([
       parserOptions: { ecmaFeatures: { jsx: true } },
     },
   },
+  // Node scripts / functions get Node globals (in case any slip past ignores)
+  {
+    files: ['functions/**/*.js', 'add-sri.js', 'createAdmin.js', 'updateUser.js'],
+    languageOptions: {
+      globals: { ...globals.node, ...globals.es2021 }
+    }
+  }
 ])

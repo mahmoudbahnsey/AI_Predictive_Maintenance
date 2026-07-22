@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { Activity, Clock, Zap } from 'lucide-react';
 
-export default function HeroStatus({ state, healthScore, lastAnalysisTime }) {
+export default function HeroStatus({ state, healthScore, lastAnalysisTime, liveFeedLabel = 'Live AI Monitoring Active' }) {
   // state: 'normal', 'warning', 'critical'
   
   const statusLabels = {
@@ -36,7 +36,7 @@ export default function HeroStatus({ state, healthScore, lastAnalysisTime }) {
       <div className="hero-info">
         <h1>{statusLabels[state] || 'System Status'}</h1>
         <p>
-          <span style={{ color: `var(--color-${state})` }}><Activity size={16} /> Live AI Monitoring Active</span>
+          <span style={{ color: `var(--color-${state})` }}><Activity size={16} /> {liveFeedLabel}</span>
           <span>•</span>
           <span><Clock size={16} /> Last Scan: {lastAnalysisTime}</span>
         </p>

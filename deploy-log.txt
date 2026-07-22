@@ -1,0 +1,22 @@
+C:\Users\asus\AppData\Roaming\npm\node_modules\firebase-tools\node_modules\configstore\index.js:52
+			throw error;
+			^
+
+Error: EPERM: operation not permitted, open 'C:\Users\asus\.config\configstore\firebase-tools.json'
+    at Object.readFileSync (node:fs:440:20)
+    at get all (C:\Users\asus\AppData\Roaming\npm\node_modules\firebase-tools\node_modules\configstore\index.js:34:25)
+    at Configstore.get (C:\Users\asus\AppData\Roaming\npm\node_modules\firebase-tools\node_modules\configstore\index.js:77:27)
+    at localPreferences (C:\Users\asus\AppData\Roaming\npm\node_modules\firebase-tools\lib\experiments.js:203:60)
+    at Object.isEnabled (C:\Users\asus\AppData\Roaming\npm\node_modules\firebase-tools\lib\experiments.js:213:12)
+    at Object.load (C:\Users\asus\AppData\Roaming\npm\node_modules\firebase-tools\lib\commands\index.js:38:21)
+    at Object.<anonymous> (C:\Users\asus\AppData\Roaming\npm\node_modules\firebase-tools\lib\index.js:51:23)
+    at Module._compile (node:internal/modules/cjs/loader:1761:14)
+    at Object..js (node:internal/modules/cjs/loader:1893:10)
+    at Module.load (node:internal/modules/cjs/loader:1481:32) {
+  errno: -4048,
+  code: 'EPERM',
+  syscall: 'open',
+  path: 'C:\\Users\\asus\\.config\\configstore\\firebase-tools.json'
+}
+
+Node.js v24.12.0

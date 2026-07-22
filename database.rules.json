@@ -37,6 +37,31 @@
     "systems": {
       ".read": "auth != null && root.child('users').child(auth.uid).child('status').val() === 'approved'",
       ".write": "auth != null && root.child('users').child(auth.uid).child('status').val() === 'approved'"
+    },
+    "settings": {
+      ".read": "auth != null && root.child('users').child(auth.uid).child('status').val() === 'approved'",
+      ".write": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin' && root.child('users').child(auth.uid).child('status').val() === 'approved'"
+    },
+    "userSettings": {
+      "$uid": {
+        ".read": "$uid === auth.uid || (auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin' && root.child('users').child(auth.uid).child('status').val() === 'approved')",
+        ".write": "$uid === auth.uid || (auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin' && root.child('users').child(auth.uid).child('status').val() === 'approved')"
+      }
+    },
+    "solarMonitors": {
+      ".read": "auth != null && root.child('users').child(auth.uid).child('status').val() === 'approved'",
+      "$deviceId": {
+        "latest": {
+          ".write": "(auth != null && root.child('users').child(auth.uid).child('status').val() === 'approved') || !data.exists() || (data.exists() && newData.child('receivedAt').val() >= data.child('receivedAt').val())",
+          ".validate": "newData.hasChild('receivedAt') && newData.child('receivedAt').isNumber()"
+        },
+        "history": {
+          "$recordId": {
+            ".write": "(auth != null && root.child('users').child(auth.uid).child('status').val() === 'approved') || !data.exists()",
+            ".validate": "newData.hasChild('receivedAt') && newData.child('receivedAt').isNumber()"
+          }
+        }
+      }
     }
   }
 }

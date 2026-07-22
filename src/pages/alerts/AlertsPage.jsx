@@ -14,7 +14,9 @@ import {
 } from 'lucide-react';
 import Sidebar from '../../components/Sidebar';
 import CommandHeader from '../../components/CommandHeader';
-import { mockAlerts } from '../../data/mockAlertsData';
+import { mockAlerts as initialMockAlerts } from '../../data/mockAlertsData';
+import { loadTelemetryAnalysis, FAULT_DEFINITIONS } from '../../utils/faultAnalyzer';
+import { useEffect } from 'react';
 import '../../styles/alerts.css';
 
 const severityOptions = ['all', 'critical', 'warning', 'info'];
@@ -44,7 +46,44 @@ const statusLabels = {
 };
 
 export default function AlertsPage() {
-  const [selectedAlertId, setSelectedAlertId] = useState(mockAlerts[0]?.id);
+  const [analysis, setAnalysis] = useState(() => loadTelemetryAnalysis());
+
+  useEffect(() => {
+    const refreshAnalysis = () => setAnalysis(loadTelemetryAnalysis());
+    window.addEventListener('storage', refreshAnalysis);
+    window.addEventListener('voltiq-analysis-updated', refreshAnalysis);
+    return () => {
+      window.removeEventListener('storage', refreshAnalysis);
+      window.removeEventListener('voltiq-analysis-updated', refreshAnalysis);
+    };
+  }, []);
+
+  const activeAlerts = useMemo(() => {
+    if (!analysis || !analysis.alerts || analysis.alerts.length === 0) {
+      return initialMockAlerts;
+    }
+    return analysis.alerts.map((a, i) => ({
+      id: `ALT-${new Date().getTime().toString().slice(-4)}-${i}`,
+      type: FAULT_DEFINITIONS[a.code]?.title || a.code,
+      device: 'Telemetry Data',
+      system: analysis.sourceName || 'Unknown System',
+      message: a.message,
+      severity: a.severity === 'critical' ? 'critical' : a.severity === 'warning' ? 'warning' : 'info',
+      status: 'UNACKNOWLEDGED',
+      timeTriggered: analysis.analyzedAt,
+      assignedTo: 'Unassigned',
+      slaState: a.severity === 'critical' ? 'breached' : 'active',
+      slaRemaining: a.severity === 'critical' ? '-0h 15m' : '1h 30m',
+      value: a.count + ' occurrences',
+      threshold: 'Any',
+      recommendedAction: a.repair || 'Investigate',
+      history: [
+        { time: analysis.analyzedAt, event: `Rule analyzer flagged ${a.code} via ingestion.` }
+      ]
+    }));
+  }, [analysis]);
+
+  const [selectedAlertId, setSelectedAlertId] = useState(null);
   const [severityFilter, setSeverityFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
@@ -52,12 +91,12 @@ export default function AlertsPage() {
   const navigate = useNavigate();
 
   const stats = useMemo(() => {
-    const critical = mockAlerts.filter((alert) => alert.severity === 'critical').length;
-    const unassigned = mockAlerts.filter((alert) => alert.assignedTo === 'Unassigned').length;
-    const breached = mockAlerts.filter((alert) => alert.slaState === 'breached').length;
+    const critical = activeAlerts.filter((alert) => alert.severity === 'critical').length;
+    const unassigned = activeAlerts.filter((alert) => alert.assignedTo === 'Unassigned').length;
+    const breached = activeAlerts.filter((alert) => alert.slaState === 'breached').length;
 
     return [
-      { label: 'Active alerts', value: mockAlerts.length, icon: Radio, tone: 'neutral' },
+      { label: 'Active alerts', value: activeAlerts.length, icon: Radio, tone: 'neutral' },
       { label: 'Critical', value: critical, icon: ShieldAlert, tone: 'critical' },
       { label: 'Unassigned', value: unassigned, icon: UserRoundCheck, tone: 'warning' },
       { label: 'SLA breached', value: breached, icon: Clock3, tone: 'danger' },
@@ -67,7 +106,7 @@ export default function AlertsPage() {
   const filteredAlerts = useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLowerCase();
 
-    return mockAlerts.filter((alert) => {
+    return activeAlerts.filter((alert) => {
       const matchesSeverity = severityFilter === 'all' || alert.severity === severityFilter;
       const matchesStatus = statusFilter === 'all' || alert.status === statusFilter;
       const matchesSearch =
@@ -82,7 +121,7 @@ export default function AlertsPage() {
   }, [searchTerm, severityFilter, statusFilter]);
 
   const selectedAlert =
-    filteredAlerts.find((alert) => alert.id === selectedAlertId) ||
+    filteredAlerts.find((alert) => alert.id === (selectedAlertId || activeAlerts[0]?.id)) ||
     filteredAlerts[0] ||
     null;
 
@@ -278,7 +317,7 @@ export default function AlertsPage() {
                   <div className="alert-history">
                     <h3>Recent activity</h3>
                     <div className="timeline-track">
-                      {selectedAlert.history.map((event, index) => (
+                      {selectedAlert.history.map((event) => (
                         <div key={`${event.time}-${event.event}`} className="timeline-event">
                           <div className="timeline-node"></div>
                           <div className="timeline-content">

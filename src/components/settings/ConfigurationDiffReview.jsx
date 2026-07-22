@@ -1,11 +1,46 @@
 import { motion } from 'framer-motion';
 import { ShieldAlert, ArrowRight, X } from 'lucide-react';
 
-export default function ConfigurationDiffReview({ onConfirm, onCancel }) {
-  const diffs = [
-    { setting: 'System Maintenance Mode', old: 'Disabled', new: 'Enabled', type: 'danger' },
-    { setting: 'Auto Sync Enabled', old: 'True', new: 'False', type: 'warning' }
-  ];
+export default function ConfigurationDiffReview({ onConfirm, onCancel, diffs: incomingDiffs }) {
+  // Support dynamic real diffs from parent (SettingsPage).
+  const diffs = Array.isArray(incomingDiffs) ? incomingDiffs : [];
+
+  // If somehow rendered with no real diffs, show a non-alarming pass-through instead of scary warning + dummy.
+  if (diffs.length === 0) {
+    return (
+      <div className="cfg-modal-overlay">
+        <motion.div 
+          className="cfg-modal"
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+        >
+          <div style={{ padding: '24px', borderBottom: '1px solid rgba(255,255,255,0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h3 style={{ margin: 0, color: '#fff', fontSize: '18px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <ShieldAlert size={20} color="var(--gold)" /> Configuration Diff Review
+            </h3>
+            <button className="interactive-btn" onClick={onCancel} style={{ padding: '4px', background: 'transparent', minHeight: 'auto' }}>
+              <X size={16} color="#a8b5ae" />
+            </button>
+          </div>
+
+          <div style={{ padding: '24px' }}>
+            <p style={{ fontSize: '13px', color: '#a8b5ae', margin: '0 0 24px 0' }}>
+              No significant configuration differences detected in critical areas. Save will persist current values.
+            </p>
+          </div>
+
+          <div style={{ padding: '24px', background: 'rgba(0,0,0,0.5)', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+            <button className="interactive-btn" onClick={onCancel} style={{ padding: '10px 16px', background: 'transparent', border: '1px solid rgba(255,255,255,0.2)' }}>
+              Cancel Edit
+            </button>
+            <button className="interactive-btn" onClick={onConfirm} style={{ padding: '10px 24px', background: 'var(--gold)', color: '#000', fontWeight: 'bold' }}>
+              Confirm &amp; Save
+            </button>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
     <div className="cfg-modal-overlay">

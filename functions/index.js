@@ -1,5 +1,92 @@
 const { onRequest } = require("firebase-functions/v2/https");
 const logger = require("firebase-functions/logger");
+const admin = require("firebase-admin");
+const { normalizeSolarPayload, hasTelemetry } = require("./solarDataNormalizer");
+
+if (!admin.apps.length) {
+  admin.initializeApp();
+}
+
+const db = admin.database();
+const HISTORY_LIMIT = 120;
+
+exports.ingestSolarData = onRequest({ cors: true }, async (req, res) => {
+  res.set("Access-Control-Allow-Origin", "*");
+  res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.set("Access-Control-Allow-Headers", "Content-Type");
+
+  if (req.method === "OPTIONS") {
+    res.status(204).send("");
+    return;
+  }
+
+  if (req.method !== "POST") {
+    res.status(405).json({ ok: false, error: "Method Not Allowed. Use HTTP POST with JSON body." });
+    return;
+  }
+
+  const body = req.body && typeof req.body === "object" ? req.body : {};
+  const normalized = normalizeSolarPayload(body);
+
+  if (!hasTelemetry(normalized)) {
+    res.status(400).json({
+      ok: false,
+      error: "No recognizable solar telemetry fields found in JSON body.",
+      hint: "Send fields like solar_voltage, Solar_Volt, battery_voltage, temperature, etc.",
+    });
+    return;
+  }
+
+  const receivedAt = Date.now();
+  const deviceId = normalized.deviceId.replace(/[.#$[\]]/g, "_");
+  const latestPayload = {
+    ...normalized,
+    receivedAt,
+    source: "solar-monitor-api",
+  };
+
+  try {
+    const latestRef = db.ref(`solarMonitors/${deviceId}/latest`);
+    const historyRef = db.ref(`solarMonitors/${deviceId}/history`).push();
+
+    await Promise.all([
+      latestRef.set(latestPayload),
+      historyRef.set({
+        voltage: normalized.voltage,
+        current: normalized.current,
+        power: normalized.power,
+        temperature: normalized.temperature,
+        solarVolt: normalized.solarVolt,
+        solarCurrent: normalized.solarCurrent,
+        batteryVolt: normalized.batteryVolt,
+        batteryCurrent: normalized.batteryCurrent,
+        receivedAt,
+      }),
+    ]);
+
+    const historySnap = await db.ref(`solarMonitors/${deviceId}/history`).orderByChild("receivedAt").limitToLast(HISTORY_LIMIT + 20).get();
+    if (historySnap.exists()) {
+      const entries = Object.entries(historySnap.val() || {});
+      if (entries.length > HISTORY_LIMIT) {
+        const stale = entries
+          .sort((a, b) => (a[1].receivedAt || 0) - (b[1].receivedAt || 0))
+          .slice(0, entries.length - HISTORY_LIMIT);
+        await Promise.all(stale.map(([key]) => db.ref(`solarMonitors/${deviceId}/history/${key}`).remove()));
+      }
+    }
+
+    logger.info("Solar monitor data ingested", { deviceId, receivedAt });
+    res.status(200).json({
+      ok: true,
+      deviceId,
+      receivedAt,
+      message: "Telemetry stored. Dashboard will update in real time.",
+    });
+  } catch (error) {
+    logger.error("Failed to store solar monitor telemetry", error);
+    res.status(500).json({ ok: false, error: "Failed to store telemetry." });
+  }
+});
 
 exports.askWattson = onRequest({ cors: true }, async (req, res) => {
   if (req.method !== "POST") {
@@ -7,7 +94,7 @@ exports.askWattson = onRequest({ cors: true }, async (req, res) => {
     return;
   }
 
-  const { message, history, currentPath, pageContext, selectedItem, dashboardData, userRole, mode } = req.body;
+  const { message, history, currentPath, pageContext, selectedItem, dashboardData, userRole, mode, currentTimezone } = req.body;
 
   if (!message) {
     res.status(400).send("Bad Request: Missing message");
@@ -44,6 +131,7 @@ exports.askWattson = onRequest({ cors: true }, async (req, res) => {
     `Current page context in the app: ${currentPath || "dashboard"}. ` +
     `Conversation Mode: ${mode || "ask"} (${modeInstruction}). ` +
     `User Role: ${userRole || "User"}. ` +
+    `User's configured time zone: ${currentTimezone || "UTC-8"}. When discussing live system time, clocks, schedules, or any time-based data, reference and respect this zone. ` +
     (pageContext ? `Current Page Context Data: ${JSON.stringify(pageContext)}. ` : '') +
     (selectedItem ? `Selected Item Data: ${JSON.stringify(selectedItem)}. ` : '') +
     (dashboardData ? `Dashboard Performance Data: ${JSON.stringify(dashboardData)}. ` : '') +

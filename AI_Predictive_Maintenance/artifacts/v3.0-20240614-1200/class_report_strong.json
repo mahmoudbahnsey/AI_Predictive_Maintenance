@@ -1,0 +1,11 @@
+{
+  "F0": {"precision": 0.982, "recall": 0.979, "f1": 0.980, "support": 652},
+  "F1": {"precision": 0.961, "recall": 0.948, "f1": 0.954, "support": 105},
+  "F2": {"precision": 0.975, "recall": 0.982, "f1": 0.978, "support": 168},
+  "F3": {"precision": 0.952, "recall": 0.941, "f1": 0.946, "support": 62},
+  "F4": {"precision": 0.943, "recall": 0.912, "f1": 0.927, "support": 52},
+  "F5": {"precision": 0.938, "recall": 0.927, "f1": 0.932, "support": 63},
+  "F6": {"precision": 0.968, "recall": 0.975, "f1": 0.971, "support": 129},
+  "F7": {"precision": 0.972, "recall": 0.941, "f1": 0.956, "support": 262},
+  "F8": {"precision": 0.951, "recall": 0.962, "f1": 0.956, "support": 144}
+}

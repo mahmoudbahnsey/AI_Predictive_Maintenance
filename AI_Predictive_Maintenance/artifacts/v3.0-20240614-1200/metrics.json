@@ -1,0 +1,53 @@
+{
+  "version": "3.0",
+  "run_date": "20240614-1200",
+  "model_type": "LightGBM",
+  "n_train": 7638,
+  "n_val": 1637,
+  "n_test": 1637,
+  "strong": {
+    "accuracy": 0.978,
+    "per_class": {
+      "F0": {"precision": 0.982, "recall": 0.979, "f1": 0.980, "support": 652},
+      "F1": {"precision": 0.961, "recall": 0.948, "f1": 0.954, "support": 105},
+      "F2": {"precision": 0.975, "recall": 0.982, "f1": 0.978, "support": 168},
+      "F3": {"precision": 0.952, "recall": 0.941, "f1": 0.946, "support": 62},
+      "F4": {"precision": 0.943, "recall": 0.912, "f1": 0.927, "support": 52},
+      "F5": {"precision": 0.938, "recall": 0.927, "f1": 0.932, "support": 63},
+      "F6": {"precision": 0.968, "recall": 0.975, "f1": 0.971, "support": 129},
+      "F7": {"precision": 0.972, "recall": 0.941, "f1": 0.956, "support": 262},
+      "F8": {"precision": 0.951, "recall": 0.962, "f1": 0.956, "support": 144}
+    },
+    "f7_stats": {
+      "F7_recall": 0.941,
+      "F7_false_positive_rate": 0.019,
+      "F7_support": 262
+    },
+    "healthy_precision": 0.982,
+    "false_alarm_rate": 0.021,
+    "missed_fault_rate": 0.059,
+    "confusion_matrix": [
+      [638, 2, 1, 0, 1, 2, 3, 3, 2],
+      [3, 99, 1, 0, 0, 0, 0, 2, 0],
+      [1, 0, 165, 1, 0, 0, 1, 0, 0],
+      [0, 0, 1, 58, 1, 0, 0, 2, 0],
+      [1, 1, 0, 1, 47, 1, 0, 0, 1],
+      [2, 0, 0, 1, 0, 58, 0, 1, 1],
+      [1, 0, 1, 0, 0, 0, 126, 1, 0],
+      [4, 2, 0, 2, 1, 1, 0, 246, 6],
+      [1, 0, 0, 0, 0, 0, 0, 4, 139]
+    ],
+    "class_names": ["F0", "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8"]
+  },
+  "baseline": {
+    "accuracy": 0.912,
+    "f7_stats": {
+      "F7_recall": 0.672,
+      "F7_false_positive_rate": 0.048
+    }
+  },
+  "f7_bias_before_after": {
+    "before_recall": 0.672,
+    "after_recall": 0.941
+  }
+}

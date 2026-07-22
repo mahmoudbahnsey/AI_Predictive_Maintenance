@@ -9,10 +9,18 @@ export default function WattsonPresenceController({
   const clickCount = useRef(0);
   const clickTimer = useRef(null);
 
-  // natural eye tracking mouse movement
+  // natural eye tracking mouse movement — only while awake / monitoring
   useEffect(() => {
     const handleMouseMove = (e) => {
       resetTimer();
+
+      if (mood === 'sleeping' || mood === 'sleepy') {
+        // Let him sleep: force sleepy/closed eyes, no active tracking
+        if (onEyeMovement) {
+          onEyeMovement({ x: 0, y: 2.8, blink: true });
+        }
+        return;
+      }
 
       if (onEyeMovement) {
         const viewportWidth = window.innerWidth;
@@ -22,14 +30,14 @@ export default function WattsonPresenceController({
         const dx = (e.clientX - viewportWidth / 2) / (viewportWidth / 2);
         const dy = (e.clientY - viewportHeight / 2) / (viewportHeight / 2);
         
-        // Map to slight eye offset angles
-        onEyeMovement({ x: dx * 4, y: dy * 3 });
+        // Map to slight eye offset angles — keep an eye on the user
+        onEyeMovement({ x: dx * 4.5, y: dy * 3.2 });
       }
     };
 
     window.addEventListener('mousemove', handleMouseMove);
     return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, [resetTimer, onEyeMovement]);
+  }, [resetTimer, onEyeMovement, mood]);
 
   // Click tracking to trigger "annoyed" mood on spam clicks
   useEffect(() => {
@@ -71,6 +79,26 @@ export default function WattsonPresenceController({
     }, 4000);
 
     return () => clearInterval(blinkInterval);
+  }, [mood, onEyeMovement]);
+
+  // Keep an eye on him while awake: subtle random monitoring glances even without mouse movement
+  useEffect(() => {
+    if (mood === 'sleeping' || mood === 'sleepy') return undefined;
+
+    const monitorInterval = setInterval(() => {
+      // occasional glance to simulate active monitoring / staying alert
+      if (Math.random() > 0.65 && onEyeMovement) {
+        const glanceX = (Math.random() - 0.5) * 2.2;
+        const glanceY = (Math.random() - 0.5) * 1.6;
+        onEyeMovement({ x: glanceX, y: glanceY });
+
+        setTimeout(() => {
+          onEyeMovement({ x: 0, y: 0 });
+        }, 650);
+      }
+    }, 7500);
+
+    return () => clearInterval(monitorInterval);
   }, [mood, onEyeMovement]);
 
   return null; // pure controller, no UI

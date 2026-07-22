@@ -3144,6 +3144,73 @@ a:hover {
   }
 }
 
+/* Phone-specific fixes to prevent "corrupted" layout */
+@media (max-width: 640px) {
+  /* Hide the wide sidebar completely on phones - rely on header command-nav */
+  .voltiq-shell .sidebar {
+    display: none !important;
+  }
+
+  .voltiq-shell .dashboard-main {
+    margin-left: 0 !important;
+    padding-top: 0 !important;
+    width: 100% !important;
+  }
+
+  /* Make main content full bleed and stack nicely */
+  .dashboard-main {
+    margin-left: 0 !important;
+  }
+
+  /* Wattson panel: make it usable on small screens */
+  .wattson-panel-container {
+    width: 96% !important;
+    max-width: 100vw !important;
+    left: 2% !important;
+    right: 2% !important;
+    border-radius: 12px !important;
+  }
+
+  /* Launcher: bigger tap target, better positioning on phones */
+  .wattson-launcher-custom,
+  .chatbot-launcher {
+    width: 56px !important;
+    height: 56px !important;
+    bottom: 16px !important;
+    right: 16px !important;
+  }
+
+  /* Ensure no horizontal overflow and readable text */
+  body, .dashboard, .voltiq-shell {
+    overflow-x: hidden;
+  }
+
+  .cfg-panel, .ops-panel, .ai-panel {
+    padding: 16px !important;
+    margin: 8px !important;
+  }
+
+  /* Stack 2-col grids */
+  .cfg-grid-2 {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Make buttons and inputs finger-friendly */
+  button, .cfg-input, .cfg-toggle {
+    min-height: 44px !important;
+  }
+
+  /* Command nav in header should be more compact/scrollable on phone */
+  .command-nav {
+    gap: 4px;
+    font-size: 12px;
+  }
+
+  .command-nav-item {
+    padding: 6px 10px;
+  }
+}
+
 @media (max-width: 720px) {
   .analytics-card-grid,
   .savings-grid,
@@ -3889,3 +3956,241 @@ body[data-theme="high-contrast"] .system-time-card {
   color: #ffd458;
   font-weight: 600;
 }
+
+/* ==========================================================================
+   MOBILE MENU & RESPONSIVENESS CRITICAL OVERRIDES
+   ========================================================================== */
+.mobile-menu-btn {
+  display: none !important;
+}
+
+.mobile-menu-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: var(--voltiq-bg);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+.mobile-menu-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 24px;
+}
+
+.close-mobile-menu {
+  background: transparent;
+  border: none;
+  color: var(--text);
+  cursor: pointer;
+  padding: 8px;
+}
+
+.mobile-menu-section {
+  margin-bottom: 32px;
+}
+
+.mobile-menu-section h3 {
+  font-size: 13px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 16px;
+  padding-left: 12px;
+}
+
+.mobile-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  padding: 16px;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 500;
+  text-align: left;
+  border-radius: var(--radius-sm);
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.mobile-menu-item:hover,
+.mobile-menu-item.active {
+  background: rgba(245, 185, 20, 0.1);
+  color: var(--gold);
+}
+
+.mobile-menu-item svg {
+  color: var(--gold);
+}
+
+/* ==========================================================================
+   MOBILE RESPONSIVENESS CRITICAL OVERRIDES
+   ========================================================================== */
+@media (max-width: 900px) {
+  html, body {
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+  
+  .telemetry-dashboard-page,
+  .ops-page {
+    padding: 16px 12px 24px !important;
+  }
+  
+  .command-header {
+    flex-wrap: wrap;
+    height: auto !important;
+    padding: 8px 12px !important;
+    gap: 8px !important;
+  }
+  
+  .command-brand {
+    min-width: 0 !important;
+    width: 100% !important;
+    justify-content: center;
+    margin-bottom: 8px;
+  }
+  
+  .command-nav {
+    display: none !important;
+  }
+  
+  .mobile-menu-btn {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    color: var(--gold);
+    cursor: pointer;
+  }
+  
+  .command-tools {
+    width: 100%;
+    justify-content: space-between;
+    overflow-x: visible !important;
+  }
+  
+  .command-search-container {
+    display: none !important;
+  }
+  
+  .system-status-bar {
+    flex-direction: column;
+    align-items: stretch !important;
+    padding: 16px !important;
+    gap: 16px !important;
+  }
+  
+  .ai-oversized-class {
+    font-size: 48px !important;
+  }
+  
+  .ai-oversized-confidence {
+    font-size: 24px !important;
+  }
+  
+  .sandbox-main-grid {
+    display: grid;
+    grid-template-columns: 1fr !important;
+    gap: 20px !important;
+  }
+  
+  /* Reset large min-widths */
+  .command-center-layout {
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+  
+  .ops-content {
+    min-width: 0 !important;
+  }
+  
+  .sys-grid-4,
+  .sys-grid-2,
+  .dashboard-grid-container,
+  .dashboard-kpi-row,
+  .dashboard-grid,
+  .dashboard-grid-wide,
+  .telemetry-hud-grid {
+    grid-template-columns: 1fr !important;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .sys-card, .hud-card, .dashboard-stat-card {
+    width: 100% !important;
+  }
+  
+  /* Fix oversized floating elements on mobile */
+  .smart-alert-strip {
+    width: 90% !important;
+    max-width: 340px !important;
+    padding: 12px 16px !important;
+    border-radius: 12px !important;
+    font-size: 13px !important;
+    gap: 12px !important;
+    white-space: normal !important;
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+    text-align: center !important;
+  }
+  
+  .smart-alert-strip div {
+    margin-left: 0 !important;
+    align-items: center !important;
+  }
+  
+  .smart-alert-strip strong {
+    font-size: 13px !important;
+  }
+  
+  .wattson-launcher-custom {
+    transform: none !important;
+    min-width: 80px !important;
+    min-height: 80px !important;
+    bottom: 8px !important;
+    right: 8px !important;
+  }
+  
+  .wattson-launcher-custom .wattson-avatar-3d {
+    --wattson-size: 32px !important;
+  }
+  
+  .wattson-launcher-stage {
+    width: 60px !important;
+    height: 60px !important;
+  }
+  
+  .wattson-launcher-badge {
+    font-size: 10px !important;
+    padding: 0 10px !important;
+    min-height: 24px !important;
+    margin-top: -8px !important;
+  }
+}
+@media (max-width: 480px) {
+  .sensor-matrix-grid {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .hero-stat-item {
+    font-size: 24px !important;
+  }
+}
+

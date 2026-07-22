@@ -65,33 +65,79 @@ export default function WattsonPanel({
     onTypingEnd();
   };
 
-  const getStatusLabel = () => {
-    switch (mood) {
-      case 'thinking': return 'Thinking...';
-      case 'sleeping': return 'Sleeping';
-      case 'sleepy': return 'Getting sleepy';
-      case 'annoyed': return 'Annoyed';
-      case 'focused': return 'Listening...';
-      case 'warning': return 'Warning';
-      case 'critical': return 'Critical';
-      case 'scanning': return 'Scanning...';
-      default: return 'Online';
+  const handleModeSelect = (newMode) => {
+    if (typeof onModeChange === 'function') {
+      onModeChange(newMode);
     }
+  };
+
+  const getCurrentModeLabel = () => {
+    switch (mode) {
+      case 'analyze': return 'Analyze';
+      case 'diagnose': return 'Diagnose';
+      case 'summarize': return 'Summarize';
+      case 'report': return 'Report';
+      case 'troubleshoot': return 'Troubleshoot';
+      default: return 'Ask';
+    }
+  };
+
+  const getStatusLabel = () => {
+    const modeLabel = getCurrentModeLabel();
+    const baseMood = (() => {
+      switch (mood) {
+        case 'thinking': return 'Thinking...';
+        case 'sleeping': return 'Sleeping';
+        case 'sleepy': return 'Getting sleepy';
+        case 'annoyed': return 'Annoyed';
+        case 'focused': return 'Listening...';
+        case 'warning': return 'Warning';
+        case 'critical': return 'Critical';
+        case 'scanning': return 'Scanning...';
+        default: return 'Online';
+      }
+    })();
+    return `${modeLabel} • ${baseMood}`;
   };
 
   const getPlaceholderText = () => {
     const route = currentPath.split('/').filter(Boolean).pop() || 'dashboard';
+    const modeLabel = getCurrentModeLabel().toLowerCase();
+
+    let base;
     switch (route) {
       case 'dashboard':
-        return 'Ask Wattson about system health, power, voltage, or AI prediction…';
+        base = 'system health, power, voltage, or AI prediction';
+        break;
       case 'alerts':
-        return 'Ask Wattson which alert needs attention first…';
+        base = 'which alert needs attention first';
+        break;
       case 'reports':
-        return 'Ask Wattson to help generate an executive report…';
+        base = 'how to generate an executive report';
+        break;
       case 'ai-training':
-        return 'Ask Wattson about accuracy, dataset quality, or model readiness…';
+        base = 'model accuracy, dataset quality, or deployment readiness';
+        break;
+      case 'settings':
+        base = 'configuration, time zones, or account settings';
+        break;
       default:
-        return 'Ask Wattson about faults, inverter issues, reports, or system status...';
+        base = 'faults, inverter issues, reports, or system status';
+    }
+
+    switch (mode) {
+      case 'summarize':
+        return `Summarize ${base}...`;
+      case 'analyze':
+        return `Analyze trends in ${base}...`;
+      case 'diagnose':
+        return `Diagnose issues with ${base}...`;
+      case 'report':
+        return `Prepare a report about ${base}...`;
+      case 'troubleshoot':
+        return `Troubleshoot ${base}...`;
+      default:
+        return `Ask Wattson about ${base}...`;
     }
   };
 
@@ -135,7 +181,7 @@ export default function WattsonPanel({
           </div>
 
           {/* Mode Selector */}
-          <WattsonModeSelector activeMode={mode} onModeChange={onModeChange} />
+          <WattsonModeSelector activeMode={mode} onModeChange={handleModeSelect} />
 
           {/* Context Chips status line */}
           <WattsonContextChips 

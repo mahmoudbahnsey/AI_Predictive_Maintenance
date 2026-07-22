@@ -1,8 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  ShieldAlert, 
-  AlertTriangle, 
   Cpu, 
   RefreshCw, 
   Wrench, 
@@ -23,7 +21,7 @@ export default function SystemDiagnosticsModal({ system, onClose, setFleetData }
   const [telemetryLogs, setTelemetryLogs] = useState([]);
   const [localSystem, setLocalSystem] = useState(null);
 
-  const logEndRef = useRef(null);
+  const telemetryContainerRef = useRef(null);
 
   // Sync with system prop
   useEffect(() => {
@@ -85,8 +83,8 @@ export default function SystemDiagnosticsModal({ system, onClose, setFleetData }
   }, [localSystem]);
 
   useEffect(() => {
-    if (logEndRef.current) {
-      logEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    if (telemetryContainerRef.current) {
+      telemetryContainerRef.current.scrollTop = telemetryContainerRef.current.scrollHeight;
     }
   }, [telemetryLogs]);
 
@@ -243,13 +241,12 @@ export default function SystemDiagnosticsModal({ system, onClose, setFleetData }
                   <span className="telemetry-header-title">LIVE TELEMETRY STREAM</span>
                   <span>BAUD: 115200</span>
                 </div>
-                <div className="telemetry-grid-lines">
+                <div ref={telemetryContainerRef} className="telemetry-grid-lines">
                   {telemetryLogs.map((log, index) => (
                     <div key={index} className={`log-line ${log.type}`}>
                       {log.text}
                     </div>
                   ))}
-                  <div ref={logEndRef} />
                 </div>
               </div>
 

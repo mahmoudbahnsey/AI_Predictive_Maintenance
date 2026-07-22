@@ -1,28 +1,55 @@
 import { useState, useRef, useEffect } from 'react';
 import { ChevronDown } from 'lucide-react';
 
-export default function SettingsDropdown({ options, value, onChange, placeholder = "Select an option..." }) {
+export default function SettingsDropdown({ options, value, onChange, placeholder = "Select an option...", searchable = false }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   const dropdownRef = useRef(null);
+  const searchInputRef = useRef(null);
 
   const selectedOption = options.find(opt => opt.value === value) || options[0];
+
+  const filteredOptions = searchable && searchTerm
+    ? options.filter(opt =>
+        opt.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        opt.value.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    : options;
 
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsOpen(false);
+        setSearchTerm('');
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const toggleOpen = () => {
+    const next = !isOpen;
+    setIsOpen(next);
+    if (next && searchable) {
+      // Focus search after open
+      setTimeout(() => searchInputRef.current?.focus(), 50);
+    } else if (!next) {
+      setSearchTerm('');
+    }
+  };
+
+  const handleSelect = (optValue) => {
+    onChange(optValue);
+    setIsOpen(false);
+    setSearchTerm('');
+  };
+
   return (
     <div className="command-theme-wrapper" ref={dropdownRef} style={{ position: 'relative', width: '100%' }}>
       <button
         type="button"
         className={`cfg-input ${isOpen ? 'active' : ''}`}
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={toggleOpen}
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -80,16 +107,47 @@ export default function SettingsDropdown({ options, value, onChange, placeholder
             overflow: 'hidden'
           }}
         >
-          <div style={{ padding: '6px 0' }}>
-            {options.map((opt) => (
+          {/* Search box for large lists / searchable dropdowns */}
+          {searchable && (
+            <div style={{ padding: '8px 10px', borderBottom: '1px solid rgba(255,255,255,0.08)', background: 'rgba(0,0,0,0.3)' }}>
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search time zones (e.g. -8, +1, Pacific)..."
+                style={{
+                  width: '100%',
+                  background: 'rgba(255,255,255,0.06)',
+                  border: '1px solid rgba(212,175,55,0.3)',
+                  color: '#fff',
+                  fontSize: '13px',
+                  padding: '8px 10px',
+                  borderRadius: '4px',
+                  outline: 'none'
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') {
+                    setIsOpen(false);
+                    setSearchTerm('');
+                  }
+                }}
+              />
+            </div>
+          )}
+
+          <div style={{ padding: '4px 0', maxHeight: '260px', overflowY: 'auto' }}>
+            {filteredOptions.length === 0 && (
+              <div style={{ padding: '12px 14px', color: '#6a7b73', fontSize: '12px' }}>
+                No matches for "{searchTerm}"
+              </div>
+            )}
+            {filteredOptions.map((opt) => (
               <button
                 key={opt.value}
                 type="button"
                 className="cmd-dropdown-item"
-                onClick={() => {
-                  onChange(opt.value);
-                  setIsOpen(false);
-                }}
+                onClick={() => handleSelect(opt.value)}
                 style={{
                   display: 'flex',
                   alignItems: 'center',

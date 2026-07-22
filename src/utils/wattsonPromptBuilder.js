@@ -2,7 +2,7 @@
  * Builds the system instructions and payload formatting for the Gemini API call.
  */
 
-export function buildSystemInstruction(currentPath = 'dashboard', userRole = 'User', mode = 'ask', pageContext = null, selectedItem = null, dashboardData = null) {
+export function buildSystemInstruction(currentPath = 'dashboard', userRole = 'User', mode = 'ask', pageContext = null, selectedItem = null, dashboardData = null, currentTimezone = 'UTC-8') {
   let modeInstruction = "";
   switch (mode) {
     case "analyze":
@@ -29,6 +29,7 @@ Personality: Sarcastic, cynical, extremely competent, witty, precise. You have l
 Current page context in the app: ${currentPath}.
 Conversation Mode: ${mode} (${modeInstruction}).
 User Role: ${userRole}.
+User's configured time zone: ${currentTimezone}. When discussing live system time, clocks, schedules, or any time-based data, reference and respect this zone.
 ${pageContext ? `Current Page Context Data: ${JSON.stringify(pageContext)}. ` : ''}
 ${selectedItem ? `Selected Item Data: ${JSON.stringify(selectedItem)}. ` : ''}
 ${dashboardData ? `Dashboard Performance Data: ${JSON.stringify(dashboardData)}. ` : ''}

@@ -1,0 +1,113 @@
+{
+  "version": "1.0",
+  "description": "VoltIQ Prediction Contract - Defines input/output for both Rule-Based (demo) and Real Model (production) predictors. This contract must be followed when switching to a real backend-served model.",
+  "input": {
+    "type": "array",
+    "description": "List of telemetry rows. Each row is a flat object with sensor values.",
+    "items": {
+      "type": "object",
+      "properties": {
+        "Ia": { "type": ["number", "null"] },
+        "Ib": { "type": ["number", "null"] },
+        "VDC": { "type": ["number", "null"] },
+        "IDC": { "type": ["number", "null"] },
+        "T1": { "type": ["number", "null"] },
+        "T2": { "type": ["number", "null"] },
+        "T3": { "type": ["number", "null"] },
+        "VD": { "type": ["number", "null"] }
+      },
+      "additionalProperties": true
+    },
+    "example": [
+      {
+        "Ia": 1.5,
+        "Ib": -5.2,
+        "VDC": -18.5,
+        "IDC": 2.1,
+        "T1": 35.2,
+        "T2": 34.8,
+        "T3": 33.9,
+        "VD": -8.2
+      }
+    ]
+  },
+  "feature_schema": {
+    "description": "Features that the real model expects. The adapter must compute these from raw input before calling the real model.",
+    "raw_features": ["Ia", "Ib", "VDC", "IDC", "T1", "T2", "T3", "VD"],
+    "engineered_features": [
+      "powerEst",
+      "currentImbalance",
+      "avgTemp",
+      "deltaT",
+      "voltageDropPct",
+      "tempRiseHigh",
+      "highCurrent"
+    ],
+    "required_for_real_model": [
+      "Ia", "Ib", "VDC", "IDC", "T1", "T2", "T3", "VD",
+      "powerEst", "currentImbalance", "avgTemp", "deltaT",
+      "voltageDropPct", "tempRiseHigh", "highCurrent"
+    ]
+  },
+  "output": {
+    "type": "object",
+    "properties": {
+      "prediction": {
+        "type": "string",
+        "description": "Predicted fault class, e.g. 'F0', 'F7'"
+      },
+      "confidence": {
+        "type": "number",
+        "description": "Confidence score from 0 to 100"
+      },
+      "probabilities": {
+        "type": "object",
+        "description": "Per-class probabilities (only for real models)",
+        "additionalProperties": { "type": "number" }
+      },
+      "topFeatures": {
+        "type": "array",
+        "description": "List of top contributing features with importance (for explainability)",
+        "items": {
+          "type": "object",
+          "properties": {
+            "feature": { "type": "string" },
+            "importance": { "type": "number" }
+          }
+        }
+      },
+      "modelVersion": {
+        "type": "string",
+        "description": "e.g. v3.0-LightGBM-20240614"
+      },
+      "modelType": {
+        "type": "string",
+        "enum": ["RuleBasedJS", "LightGBM", "XGBoost", "GradientBoosting", "Simulation"],
+        "description": "The actual model type used for this prediction"
+      },
+      "predictionSource": {
+        "type": "string",
+        "enum": ["Rule-Based JS Ensemble (Demo/Fallback)", "Real LightGBM Server Model", "Demo/Simulation"],
+        "description": "Human-readable source shown in UI"
+      },
+      "isRealModel": {
+        "type": "boolean",
+        "description": "true if this came from a real trained model, false if rule-based or simulation"
+      },
+      "artifactChecksum": {
+        "type": ["string", "null"],
+        "description": "SHA256 of the model artifact (only for real models)"
+      },
+      "reason": {
+        "type": ["string", "null"],
+        "description": "High-level reason for the prediction (can be used by Gemini)"
+      }
+    },
+    "required": ["prediction", "confidence", "modelVersion", "modelType", "predictionSource", "isRealModel"]
+  },
+  "notes": {
+    "real_model_expectation": "When a real model is served (e.g. via backend), the client or server must compute the engineered features exactly as defined in feature_schema before inference.",
+    "gemini_usage": "Gemini Advisor must receive only the output object and use it for explanation/recommendations. It must never modify the 'prediction' value.",
+    "fallback_behavior": "If no real model is available, the system must fall back to Rule-Based JS Ensemble and set isRealModel=false and predictionSource accordingly."
+  }
+}

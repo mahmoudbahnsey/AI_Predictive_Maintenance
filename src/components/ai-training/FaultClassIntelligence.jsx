@@ -1,6 +1,5 @@
 import { motion } from 'framer-motion';
 import { BarChart3 } from 'lucide-react';
-import { faultClasses } from '../../data/mockAiTrainingData';
 
 export default function FaultClassIntelligence() {
   const distribution = [95, 12, 8, 4, 3, 2, 1, 2];

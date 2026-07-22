@@ -62,7 +62,8 @@ export function useWattsonChat() {
       userRole: userProfile?.role || 'User',
       pageContext: context?.pageContext || null,
       selectedItem: context?.selectedItem || null,
-      dashboardData: context?.dashboardData || null
+      dashboardData: context?.dashboardData || null,
+      currentTimezone: localStorage.getItem('voltiq-timezone') || 'UTC-8'
     };
 
     let responseText = "";
@@ -106,7 +107,8 @@ export function useWattsonChat() {
               mode, 
               payload.pageContext, 
               payload.selectedItem, 
-              payload.dashboardData
+              payload.dashboardData,
+              payload.currentTimezone
             );
             const geminiHistory = formatHistoryForGemini(messages);
             geminiHistory.push({ role: 'user', parts: [{ text: text }] });

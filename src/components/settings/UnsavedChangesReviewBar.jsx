@@ -1,32 +1,58 @@
 import { motion } from 'framer-motion';
-import { Save, RefreshCcw, Eye } from 'lucide-react';
+import { Save, RefreshCcw, Eye, AlertTriangle } from 'lucide-react';
 
-export default function UnsavedChangesReviewBar({ count, onSave, onDiscard }) {
+export default function UnsavedChangesReviewBar({ onSave, onDiscard, onReview }) {
   return (
     <motion.div 
       className="cfg-unsaved-bar"
-      initial={{ opacity: 0, y: 100 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 100 }}
-      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+      initial={{ opacity: 0, y: 80, scale: 0.98 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: 60, scale: 0.98 }}
+      transition={{ type: "spring", stiffness: 280, damping: 26 }}
     >
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '16px' }}>
-        <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: 'var(--color-warning)', boxShadow: '0 0 10px rgba(255,170,0,0.6)' }} />
-        <div>
-          <strong style={{ fontSize: '15px', color: '#fff', display: 'block' }}>You have {count} unsaved {count === 1 ? 'change' : 'changes'}</strong>
-          <span style={{ fontSize: '12px', color: '#a8b5ae' }}>Please save your configuration before leaving this page.</span>
+      {/* Left: brand-aligned accent + message (counter removed) */}
+      <div className="cfg-unsaved-bar__left">
+        <div className="cfg-unsaved-bar__icon">
+          <AlertTriangle size={18} />
+        </div>
+        <div className="cfg-unsaved-bar__text">
+          <div className="cfg-unsaved-bar__title">
+            Unsaved changes
+          </div>
+          <div className="cfg-unsaved-bar__subtitle">
+            Please save your configuration before leaving this page.
+          </div>
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: '12px' }}>
-        <button className="interactive-btn" onClick={onDiscard} style={{ padding: '10px 16px', background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', minHeight: 'auto', display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <RefreshCcw size={14} /> Discard
+      {/* Right: action buttons — completely restyled */}
+      <div className="cfg-unsaved-bar__actions">
+        <button 
+          type="button" 
+          className="cfg-bar-btn cfg-bar-btn--ghost" 
+          onClick={onDiscard}
+        >
+          <RefreshCcw size={15} />
+          <span>Discard</span>
         </button>
-        <button className="interactive-btn" style={{ padding: '10px 16px', background: 'rgba(255,255,255,0.1)', border: 'none', minHeight: 'auto', display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <Eye size={14} /> Review
+
+        <button 
+          type="button" 
+          className="cfg-bar-btn cfg-bar-btn--outline" 
+          onClick={onReview} 
+          disabled={!onReview}
+        >
+          <Eye size={15} />
+          <span>Review</span>
         </button>
-        <button className="interactive-btn" onClick={onSave} style={{ padding: '10px 24px', background: 'var(--gold)', color: '#000', fontWeight: 'bold', minHeight: 'auto', display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <Save size={16} /> Save All
+
+        <button 
+          type="button" 
+          className="cfg-bar-btn cfg-bar-btn--primary" 
+          onClick={onSave}
+        >
+          <Save size={16} />
+          <span>Save</span>
         </button>
       </div>
     </motion.div>

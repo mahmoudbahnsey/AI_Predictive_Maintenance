@@ -1,0 +1,16 @@
+---
+pid: 5580
+cwd: "E:\VoltIQ"
+command: "Get-ChildItem -Path \"$env:APPDATA\\firebase\" -Recurse -ErrorAction SilentlyContinue | Select-Object FullName; Get-ChildItem -Path \"$env:LOCALAPPDATA\\firebase\" -Recurse -ErrorAction SilentlyContinue | Select-Object FullName; Get-ChildItem -Path \"$env:USERPROFILE\\.firebase\" -Recurse -ErrorAction SilentlyContinue | Select-Object FullName"
+started_at: 2026-06-16T00:29:58.380Z
+running_for_ms: 514999   
+---
+
+FullName                                                                              
+--------                                                                              
+C:\Users\asus\AppData\Roaming\npm\firebase                                            
+C:\Users\asus\AppData\Local\npm-cache\_npx\0d7d6d9a97aecf9b\node_modules\.bin\firebase
+C:\Users\asus\AppData\Local\npm-cache\_npx\7750544ccf494d8b\node_modules\.bin\firebase
+C:\Users\asus\AppData\Local\npm-cache\_npx\e32f911d22db94fe\node_modules\google-pro...
+
+

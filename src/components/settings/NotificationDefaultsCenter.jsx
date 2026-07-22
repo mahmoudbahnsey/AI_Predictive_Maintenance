@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Send, CheckCircle, AlertCircle, Bot, ShieldAlert, Search, QrCode, RefreshCw, ExternalLink, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Send, CheckCircle, AlertCircle, Bot, QrCode, RefreshCw, ExternalLink, Trash2 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { sendTelegramMessage, detectLastTelegramChat, checkVerificationCode } from '../../utils/telegramService';
-import { initialSettingsState } from '../../data/mockSettingsData';
 
 function ToggleRow({ label, desc, initialChecked, onChange }) {
   const [active, setActive] = useState(initialChecked);
@@ -20,8 +19,9 @@ function ToggleRow({ label, desc, initialChecked, onChange }) {
   );
 }
 
-export default function NotificationDefaultsCenter({ onChange }) {
-  const notifications = initialSettingsState?.notifications || { email: true, sms: false, push: true, dailySummary: true };
+export default function NotificationDefaultsCenter({ onChange, notifications: realNotificationsProp, onUpdateNotifications }) {
+  // Prefer REAL persisted notifications from parent (Firebase-backed). Fall back gracefully.
+  const notifications = realNotificationsProp || { email: true, sms: false, push: true, dailySummary: true };
 
   const [telegramEnabled, setTelegramEnabled] = useState(() => {
     return localStorage.getItem('voltiq.telegram.enabled') === 'true';
@@ -38,12 +38,18 @@ export default function NotificationDefaultsCenter({ onChange }) {
   const [verificationCode, setVerificationCode] = useState('');
   const [countdown, setCountdown] = useState(30);
   const [isPolling, setIsPolling] = useState(false);
-  const [showManualInput, setShowManualInput] = useState(false);
   const [isSpinning, setIsSpinning] = useState(false);
   const [linkedUser, setLinkedUser] = useState(() => {
     const saved = localStorage.getItem('voltiq.telegram.user');
     return saved ? JSON.parse(saved) : null;
   });
+
+  // Controlled toggles that write back to real Firebase-backed state when possible
+  const toggleRealNotif = (key) => {
+    const updated = { ...notifications, [key]: !notifications[key] };
+    if (onUpdateNotifications) onUpdateNotifications(updated);
+    if (onChange) onChange();
+  };
 
   const generateRandomCode = () => {
     return Math.floor(100000 + Math.random() * 900000).toString();
@@ -96,7 +102,12 @@ export default function NotificationDefaultsCenter({ onChange }) {
 
   useEffect(() => {
     const fetchBotInfo = async () => {
-      const token = '8691331377:AAEOflKel1Wvwre1BcN-z61ZoeALrOewVGY';
+      // ALWAYS use environment variable (no hardcoded secrets) for real security
+      const token = import.meta.env.VITE_TELEGRAM_BOT_TOKEN;
+      if (!token) {
+        console.warn('VITE_TELEGRAM_BOT_TOKEN not configured — Telegram features limited.');
+        return;
+      }
       try {
         const res = await fetch(`https://api.telegram.org/bot${token}/getMe`);
         const data = await res.json();
@@ -113,6 +124,7 @@ export default function NotificationDefaultsCenter({ onChange }) {
   // Generate code on mount / enable if not linked
   useEffect(() => {
     if (telegramEnabled && !telegramChatId && !verificationCode) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setVerificationCode(generateRandomCode());
     }
   }, [telegramEnabled, telegramChatId, verificationCode]);
@@ -120,6 +132,7 @@ export default function NotificationDefaultsCenter({ onChange }) {
   // Auto-rotate verification code every 30 seconds
   useEffect(() => {
     if (telegramEnabled && !telegramChatId && verificationCode) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCountdown(30);
       const countdownInterval = setInterval(() => {
         setCountdown((prev) => {
@@ -138,6 +151,7 @@ export default function NotificationDefaultsCenter({ onChange }) {
   useEffect(() => {
     let intervalId = null;
     if (telegramEnabled && !telegramChatId && verificationCode) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsPolling(true);
       intervalId = setInterval(async () => {
         const result = await checkVerificationCode(verificationCode);
@@ -289,10 +303,10 @@ You will receive real-time alerts when inverter anomalies are detected by VoltIQ
       <h2 className="cfg-title">Notifications & Alerts</h2>
       
       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px' }}>
-        <ToggleRow label="Email Notifications" desc="Send daily summaries and critical alerts via email." initialChecked={notifications.email} onChange={onChange} />
-        <ToggleRow label="SMS Notifications" desc="Send critical hardware alerts via text message." initialChecked={notifications.sms} onChange={onChange} />
-        <ToggleRow label="Push Notifications" desc="Send real-time alerts to mobile app." initialChecked={notifications.push} onChange={onChange} />
-        <ToggleRow label="Daily Summary Report" desc="Generate and send end-of-day performance summary." initialChecked={notifications.dailySummary} onChange={onChange} />
+        <ToggleRow label="Email Notifications" desc="Send daily summaries and critical alerts via email." initialChecked={notifications.email} onChange={() => toggleRealNotif('email')} />
+        <ToggleRow label="SMS Notifications" desc="Send critical hardware alerts via text message." initialChecked={notifications.sms} onChange={() => toggleRealNotif('sms')} />
+        <ToggleRow label="Push Notifications" desc="Send real-time alerts to mobile app." initialChecked={notifications.push} onChange={() => toggleRealNotif('push')} />
+        <ToggleRow label="Daily Summary Report" desc="Generate and send end-of-day performance summary." initialChecked={notifications.dailySummary} onChange={() => toggleRealNotif('dailySummary')} />
       </div>
 
       <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '24px' }}>

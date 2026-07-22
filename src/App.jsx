@@ -16,6 +16,7 @@ import ReportsPage from './pages/reports/ReportsPage';
 import AiTrainingPage from './pages/ai-training/AiTrainingPage';
 import SettingsPage from './pages/settings/SettingsPage';
 import UsersPage from './pages/users/UsersPage';
+import DataPage from './pages/data/DataPage';
 
 const protectedPages = [
   'system-time',
@@ -69,6 +70,8 @@ function App() {
               </ProtectedRoute>
             }
           />
+
+          <Route path="/data" element={<DataPage />} />
 
           <Route
             path="/ai-training"

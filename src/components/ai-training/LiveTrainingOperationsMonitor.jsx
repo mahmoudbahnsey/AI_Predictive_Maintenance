@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Activity } from 'lucide-react';
 
-export default function LiveTrainingOperationsMonitor({ active, stage, setStage }) {
+export default function LiveTrainingOperationsMonitor({ active, stage, setStage }) { // eslint-disable-line no-unused-vars
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {

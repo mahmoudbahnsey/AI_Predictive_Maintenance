@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Activity, Zap, Server, Brain, Plus, Trash2 } from 'lucide-react';
+import { Activity, Server, Brain, Plus, Trash2 } from 'lucide-react';
 
 export default function SystemCardsGrid({ fleetData, onDiagnostics, onViewDetails, onAddSystem, onDeleteSystem }) {
   
@@ -10,27 +10,45 @@ export default function SystemCardsGrid({ fleetData, onDiagnostics, onViewDetail
           <Server size={20} style={{ color: 'var(--gold)' }} />
           Advanced System Overview
         </h2>
-        <button 
+        <motion.button 
           className="interactive-btn"
+          whileHover={{ scale: 1.02, boxShadow: "0px 0px 20px rgba(0, 240, 255, 0.3)" }}
+          whileTap={{ scale: 0.98 }}
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '6px',
-            padding: '8px 16px',
-            fontSize: '13px',
-            minHeight: 'auto',
-            background: 'linear-gradient(135deg, rgba(212,175,55,0.2) 0%, rgba(212,175,55,0.05) 100%)',
-            color: 'var(--gold)',
-            borderColor: 'rgba(212,175,55,0.4)',
-            borderRadius: '4px',
+            justifyContent: 'center',
+            gap: '8px',
+            padding: '12px 24px',
+            fontSize: '14px',
+            background: 'linear-gradient(90deg, rgba(0, 240, 255, 0.1) 0%, rgba(212, 175, 55, 0.1) 100%)',
+            color: '#00f0ff',
+            border: '1px solid rgba(212, 175, 55, 0.5)',
+            borderRadius: '6px',
             cursor: 'pointer',
-            fontWeight: '500',
-            transition: 'all 0.3s ease'
+            fontWeight: '600',
+            textTransform: 'uppercase',
+            letterSpacing: '1px',
+            transition: 'all 0.3s ease',
+            position: 'relative',
+            overflow: 'hidden',
+            width: '100%', // Makes it full width like in the third image, but with much better styling
+            maxWidth: '300px' // Keeps it from becoming too massive on large screens, but still prominent
           }}
           onClick={onAddSystem}
         >
-          <Plus size={16} /> Add System
-        </button>
+          <Plus size={18} /> Add System
+          <div style={{
+            position: 'absolute',
+            top: 0,
+            left: '-100%',
+            width: '50%',
+            height: '100%',
+            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)',
+            transform: 'skewX(-20deg)',
+            animation: 'scan-line 3s infinite'
+          }} />
+        </motion.button>
       </div>
 
       <div className="sys-grid-4">

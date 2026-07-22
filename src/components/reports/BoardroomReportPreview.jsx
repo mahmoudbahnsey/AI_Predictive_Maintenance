@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FileText, Cpu, AlertTriangle, CheckCircle, TrendingUp, BarChart2 } from 'lucide-react';
+import { loadTelemetryAnalysis } from '../../utils/faultAnalyzer';
 
 // Advanced AI synthesis data mappings
 const AI_SUMMARIES = {
@@ -133,6 +134,17 @@ const FINDINGS_DATA = {
 
 export default function BoardroomReportPreview({ config, rebuildToken }) {
   const [loadingState, setLoadingState] = useState('ready');
+  const [analysis, setAnalysis] = useState(() => loadTelemetryAnalysis());
+
+  useEffect(() => {
+    const refreshAnalysis = () => setAnalysis(loadTelemetryAnalysis());
+    window.addEventListener('storage', refreshAnalysis);
+    window.addEventListener('voltiq-analysis-updated', refreshAnalysis);
+    return () => {
+      window.removeEventListener('storage', refreshAnalysis);
+      window.removeEventListener('voltiq-analysis-updated', refreshAnalysis);
+    };
+  }, []);
 
   // Trigger simulated loading flow when config changes
   useEffect(() => {
@@ -159,8 +171,29 @@ export default function BoardroomReportPreview({ config, rebuildToken }) {
 
   // Selected template-specific datasets
   const activeSummary = AI_SUMMARIES[config.type]?.[config.tone] || AI_SUMMARIES["Executive Intelligence Summary"]["Executive"];
-  const activeKpis = KPI_DATA[config.type] || KPI_DATA["Executive Intelligence Summary"];
-  const activeFindings = FINDINGS_DATA[config.type] || FINDINGS_DATA["Executive Intelligence Summary"];
+  let activeKpis = KPI_DATA[config.type] || KPI_DATA["Executive Intelligence Summary"];
+  let activeFindings = FINDINGS_DATA[config.type] || FINDINGS_DATA["Executive Intelligence Summary"];
+
+  // Inject real data if available
+  if (analysis && analysis.validRows > 0) {
+    activeKpis = [
+      { label: "Valid Rows", val: analysis.validRows.toLocaleString(), sub: "Analyzed", trend: "up" },
+      { label: "Healthy Rate", val: (analysis.healthyRate ?? 50) + "%", sub: "Nominal", trend: (analysis.healthyRate ?? 50) > 50 ? "up" : "down" },
+      { label: "Top Fault", val: analysis.topFault, sub: "Detected", trend: "down" },
+      { label: "Confidence", val: analysis.averageConfidence.toFixed(1) + "%", sub: "Model", trend: "up" }
+    ];
+
+    if (analysis.alerts && analysis.alerts.length > 0) {
+      activeFindings = analysis.alerts.map(a => ({
+        text: a.message + ' (Recommendation: ' + a.repair + ')',
+        severity: a.severity === 'critical' ? 'warning' : 'success'
+      }));
+    } else {
+      activeFindings = [
+        { text: "No significant anomalies detected in the current telemetry window.", severity: "success" }
+      ];
+    }
+  }
 
   // Render responsive customized SVG trend charts based on template type
   const renderTrendChart = () => {

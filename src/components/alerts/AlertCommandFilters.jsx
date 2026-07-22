@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Filter, Search } from 'lucide-react';
+import { Search } from 'lucide-react';
 
 function CustomSelect({ options, defaultValue }) {
   const [isOpen, setIsOpen] = useState(false);

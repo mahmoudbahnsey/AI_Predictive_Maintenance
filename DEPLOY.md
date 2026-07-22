@@ -39,7 +39,7 @@ firebase deploy --only database
 
 ## Your live URL
 
-https://voltiq-9c37b.web.app   (replace with your actual project ID)
+https://voltiq-dashboard.web.app/   (your current hosting site)
 
 ## VERY IMPORTANT: Bootstrap the First Administrator
 

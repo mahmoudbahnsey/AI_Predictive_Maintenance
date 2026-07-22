@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { Cpu, Gauge, Wrench, ShieldAlert, Sparkles } from 'lucide-react';
-import { predictFault as calcFault } from '../../utils/faultAnalyzer';
+import { ruleBasedPredictFault as calcFault } from '../../utils/faultAnalyzer';
 
 export default function AiInferenceSandbox() {
   const [ia, setIa] = useState(1.0);
@@ -208,7 +208,7 @@ export default function AiInferenceSandbox() {
         })}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '32px' }}>
+      <div className="sandbox-main-grid">
         
         {/* Left Column: Parameter Sliders */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>

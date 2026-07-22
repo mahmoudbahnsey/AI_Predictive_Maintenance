@@ -1,6 +1,5 @@
 import {
   Activity,
-  BarChart3,
   Bell,
   Bot,
   FileText,
@@ -10,22 +9,30 @@ import {
   Zap,
   ChevronDown,
   User,
-  Shield,
+  Database,
+  Menu,
+  X,
+  LayoutDashboard,
+  Cpu,
+  Users
 } from 'lucide-react';
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate, NavLink } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { loadTelemetryAnalysis } from '../utils/faultAnalyzer';
+import { mockAlerts as initialMockAlerts } from '../data/mockAlertsData';
 
 const commandNav = [
   { id: 'dashboard', label: 'Dashboard', path: '/dashboard', icon: Activity },
   { id: 'systems', label: 'Systems', path: '/systems', icon: Settings },
   { id: 'alerts', label: 'Alerts', path: '/alerts', icon: Bell },
   { id: 'reports', label: 'Reports', path: '/reports', icon: FileText },
+  { id: 'data', label: 'Data', path: '/data', icon: Database },
 ];
 
 export default function CommandHeader({ activePage = 'dashboard' }) {
   const navigate = useNavigate();
-  const { user, logout, isAdmin } = useAuth();
+  const { user, userProfile, logout, isAdmin } = useAuth();
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -36,6 +43,22 @@ export default function CommandHeader({ activePage = 'dashboard' }) {
   const [headerCustomColor, setHeaderCustomColor] = useState(() => {
     return localStorage.getItem('voltiq-custom-color') || '#00ffff';
   });
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [analysis, setAnalysis] = useState(() => loadTelemetryAnalysis());
+
+  useEffect(() => {
+    const refreshAnalysis = () => setAnalysis(loadTelemetryAnalysis());
+    window.addEventListener('storage', refreshAnalysis);
+    window.addEventListener('voltiq-analysis-updated', refreshAnalysis);
+    return () => {
+      window.removeEventListener('storage', refreshAnalysis);
+      window.removeEventListener('voltiq-analysis-updated', refreshAnalysis);
+    };
+  }, []);
+
+  const activeAlertsCount = (!analysis || !analysis.alerts || analysis.alerts.length === 0)
+    ? initialMockAlerts.length
+    : analysis.alerts.length;
 
   const searchInputRef = useRef(null);
   const userMenuRef = useRef(null);
@@ -151,7 +174,7 @@ export default function CommandHeader({ activePage = 'dashboard' }) {
 
   const activeThemeObj = themes.find(t => t.id === currentTheme) || themes[0];
 
-  const displayName = user?.displayName || user?.email?.split('@')[0] || 'Andrew Moris';
+  const displayName = userProfile?.displayName || user?.displayName || user?.email?.split('@')[0] || 'VoltIQ User';
   const nameParts = displayName.trim().split(' ');
   const firstName = nameParts[0];
   const lastNameInitial = nameParts.length > 1 ? nameParts[nameParts.length - 1][0] + '.' : '';
@@ -200,6 +223,72 @@ export default function CommandHeader({ activePage = 'dashboard' }) {
           );
         })}
       </nav>
+
+      {/* Mobile Menu Button */}
+      <button 
+        type="button" 
+        className="command-tool command-icon mobile-menu-btn" 
+        onClick={() => setIsMobileMenuOpen(true)}
+        aria-label="Open mobile menu"
+      >
+        <Menu size={24} />
+      </button>
+
+      {/* Mobile Menu Overlay */}
+      {isMobileMenuOpen && (
+        <div className="mobile-menu-overlay">
+          <div className="mobile-menu-header">
+            <div className="au-brand">
+              <Zap size={22} className="au-brand__icon" />
+              <span className="au-brand__name">VoltIQ</span>
+            </div>
+            <button 
+              className="close-mobile-menu"
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              <X size={24} />
+            </button>
+          </div>
+          
+          <div className="mobile-menu-content">
+            <div className="mobile-menu-section">
+              <h3>Main Operations</h3>
+              <button className={`mobile-menu-item ${activePage === 'dashboard' ? 'active' : ''}`} onClick={() => { setIsMobileMenuOpen(false); navigate('/dashboard'); }}>
+                <LayoutDashboard size={18} /> Dashboard
+              </button>
+              <button className={`mobile-menu-item ${activePage === 'systems' ? 'active' : ''}`} onClick={() => { setIsMobileMenuOpen(false); navigate('/systems'); }}>
+                <Zap size={18} /> Systems
+              </button>
+              <button className={`mobile-menu-item ${activePage === 'alerts' ? 'active' : ''}`} onClick={() => { setIsMobileMenuOpen(false); navigate('/alerts'); }}>
+                <Bell size={18} /> Alerts
+              </button>
+              <button className={`mobile-menu-item ${activePage === 'reports' ? 'active' : ''}`} onClick={() => { setIsMobileMenuOpen(false); navigate('/reports'); }}>
+                <FileText size={18} /> Reports
+              </button>
+              <button className={`mobile-menu-item ${activePage === 'data' ? 'active' : ''}`} onClick={() => { setIsMobileMenuOpen(false); navigate('/data'); }}>
+                <Database size={18} /> Data Intake
+              </button>
+            </div>
+            
+            <div className="mobile-menu-section">
+              <h3>System</h3>
+              {isAdmin && (
+                <button className={`mobile-menu-item ${activePage === 'ai-training' ? 'active' : ''}`} onClick={() => { setIsMobileMenuOpen(false); navigate('/ai-training'); }}>
+                  <Cpu size={18} /> AI Training Center
+                </button>
+              )}
+              <button className={`mobile-menu-item ${activePage === 'settings' ? 'active' : ''}`} onClick={() => { setIsMobileMenuOpen(false); navigate('/settings'); }}>
+                <Settings size={18} /> Settings
+              </button>
+              {isAdmin && (
+                <button className={`mobile-menu-item ${activePage === 'users' ? 'active' : ''}`} onClick={() => { setIsMobileMenuOpen(false); navigate('/users'); }}>
+                  <Users size={18} /> Users
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="command-tools">
         <div className="command-search-container">
@@ -325,7 +414,7 @@ export default function CommandHeader({ activePage = 'dashboard' }) {
 
         <button type="button" className="command-tool command-icon command-bell" aria-label="Notifications" onClick={() => navigate('/alerts')}>
           <Bell size={23} />
-          <span className="notice-count">2</span>
+          {activeAlertsCount > 0 && <span className="notice-count">{activeAlertsCount}</span>}
         </button>
 
         <div className="command-user-wrapper" ref={userMenuRef} style={{ position: 'relative' }}>

@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Server, Activity, AlertTriangle, ShieldAlert, Cpu, CheckCircle } from 'lucide-react';
+import { Server, AlertTriangle, ShieldAlert, CheckCircle } from 'lucide-react';
 
 const containerVariants = {
   hidden: { opacity: 0 },

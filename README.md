@@ -350,7 +350,7 @@ The build step automatically runs `add-sri.js` to inject Subresource Integrity h
 See [DEPLOY.md](./DEPLOY.md) for complete Firebase Hosting + rules deployment instructions and security notes.
 
 Live example (replace with your project):
-https://voltiq-9c37b.web.app
+https://voltiq-dashboard.web.app/
 
 ---
 

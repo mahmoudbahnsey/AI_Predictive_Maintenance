@@ -177,22 +177,143 @@ select.cfg-input option {
 .cfg-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
 .cfg-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
 
-/* Floating Action Bar */
+/* Floating Action Bar — completely redesigned (gold brand accent, pill shape, clean modern command bar) */
 .cfg-unsaved-bar {
   position: fixed;
-  bottom: 32px;
+  bottom: 28px;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(10,10,10,0.95);
-  border: 1px solid var(--color-warning);
-  border-radius: 8px;
-  padding: 16px 24px;
+  background: rgba(8, 10, 9, 0.96);
+  border: 1px solid rgba(212, 175, 55, 0.25);
+  border-radius: 999px;
+  padding: 10px 10px 10px 18px;
   display: flex;
   align-items: center;
-  gap: 24px;
-  box-shadow: 0 10px 40px rgba(0,0,0,0.8), inset 0 0 15px rgba(255,170,0,0.1);
+  gap: 18px;
+  box-shadow: 
+    0 10px 30px rgba(0, 0, 0, 0.6),
+    0 0 0 1px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
   z-index: 100;
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(18px);
+  max-width: 92vw;
+}
+
+.cfg-unsaved-bar__left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.cfg-unsaved-bar__icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  background: rgba(212, 175, 55, 0.12);
+  color: var(--gold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 1px rgba(212, 175, 55, 0.2);
+}
+
+.cfg-unsaved-bar__text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.cfg-unsaved-bar__title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #f5f7f5;
+  letter-spacing: -0.1px;
+  white-space: nowrap;
+}
+
+.cfg-unsaved-bar__subtitle {
+  font-size: 11.5px;
+  color: #8a958e;
+  white-space: nowrap;
+}
+
+.cfg-unsaved-bar__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* New dedicated button styles for the bar (completely different from previous inline warning/blue look) */
+.cfg-bar-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 38px;
+  padding: 0 16px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.15s cubic-bezier(0.23, 1, 0.32, 1);
+  border: 1px solid transparent;
+  min-height: auto;
+  white-space: nowrap;
+}
+
+.cfg-bar-btn span {
+  line-height: 1;
+}
+
+.cfg-bar-btn--ghost {
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #c9d2ca;
+}
+
+.cfg-bar-btn--ghost:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.22);
+  color: #fff;
+}
+
+.cfg-bar-btn--outline {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.18);
+  color: #b8c3ba;
+}
+
+.cfg-bar-btn--outline:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(212, 175, 55, 0.35);
+  color: #e8f0ea;
+}
+
+.cfg-bar-btn--primary {
+  background: var(--gold);
+  color: #111;
+  font-weight: 700;
+  border-color: rgba(212, 175, 55, 0.6);
+  box-shadow: 0 2px 10px rgba(212, 175, 55, 0.35);
+}
+
+.cfg-bar-btn--primary:hover {
+  background: #e8d5a3;
+  box-shadow: 0 4px 14px rgba(212, 175, 55, 0.45);
+  transform: translateY(-1px);
+}
+
+.cfg-bar-btn--primary:active {
+  transform: translateY(0);
+}
+
+.cfg-bar-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
 /* Modals */
@@ -227,7 +348,40 @@ select.cfg-input option {
   .rail-item { border-left: none; border-bottom: 2px solid transparent; }
   .rail-item.active { border-bottom-color: var(--gold); }
   .cfg-grid-2, .cfg-grid-3 { grid-template-columns: 1fr; }
-  .cfg-unsaved-bar { width: 90%; flex-direction: column; text-align: center; gap: 16px; }
+  .cfg-unsaved-bar { 
+    width: 94%; 
+    flex-direction: column; 
+    align-items: stretch;
+    gap: 12px; 
+    padding: 12px 14px;
+    border-radius: 16px;
+  }
+
+  .cfg-unsaved-bar__left {
+    justify-content: center;
+  }
+
+  .cfg-unsaved-bar__text {
+    text-align: center;
+  }
+
+  .cfg-unsaved-bar__title {
+    font-size: 13.5px;
+  }
+
+  .cfg-unsaved-bar__subtitle {
+    font-size: 11px;
+  }
+
+  .cfg-unsaved-bar__actions {
+    justify-content: center;
+  }
+
+  .cfg-bar-btn {
+    height: 36px;
+    padding: 0 14px;
+    font-size: 12.5px;
+  }
 }
 
 /* Control Room Theme Selector Cards */

@@ -2,13 +2,9 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, 
-  Cpu, 
   Settings, 
-  Activity, 
-  ShieldAlert, 
   RefreshCw, 
   CheckCircle,
-  HelpCircle,
   Sliders,
   ChevronDown
 } from 'lucide-react';

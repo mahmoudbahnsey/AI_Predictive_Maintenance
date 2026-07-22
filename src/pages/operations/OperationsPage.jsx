@@ -162,7 +162,7 @@ function buildConnectedConfig(pathKey, baseConfig, analysis) {
   if (pathKey === 'analytics') {
     return {
       ...baseConfig,
-      subtitle: `Live Random Forest analytics from uploaded telemetry. ${connectedNote}`,
+      subtitle: `Live Rule-Based Fault Analyzer (demo/fallback) from uploaded telemetry. ${connectedNote}`,
       metrics: [
         [analysis.validRows.toLocaleString(), 'Rows analyzed'],
         [`${analysis.averageConfidence.toFixed(1)}%`, 'Avg confidence'],
@@ -230,7 +230,7 @@ function buildConnectedConfig(pathKey, baseConfig, analysis) {
       ],
       rows: [
         ['VoltiQ Main Inverter Fleet', analysis.alerts?.length ? 'Warning' : 'Online', `${analysis.validRows.toLocaleString()} rows`, `${healthScore}%`],
-        ['Random Forest Analyzer', 'Online', analysis.schema, `${analysis.averageConfidence.toFixed(1)}%`],
+        ['Rule-Based Fault Analyzer (Demo)', 'Online', analysis.schema, `${analysis.averageConfidence.toFixed(1)}%`],
         ['User Alert Pipeline', analysis.alerts?.length ? 'Warning' : 'Healthy', `${analysis.alerts?.length || 0} alerts`, analysis.alerts?.length ? 'Review' : 'Healthy'],
         ['Repair Recommendation Engine', 'Online', `${analysis.recommendations?.length || 1} actions`, 'Ready'],
       ],

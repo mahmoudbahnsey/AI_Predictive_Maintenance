@@ -3304,3 +3304,11 @@ body {
 }
 
 
+
+/* Sandbox Grid Layout */
+.sandbox-main-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 32px;
+}
+

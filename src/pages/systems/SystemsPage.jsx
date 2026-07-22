@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, X } from 'lucide-react';
+import { Plus, X, Trash2, AlertTriangle } from 'lucide-react';
 import { ref, onValue, set, remove } from 'firebase/database';
 import { db } from '../../config/firebase';
 import Sidebar from '../../components/Sidebar';
@@ -25,6 +25,7 @@ export default function SystemsPage() {
   const [loading, setLoading] = useState(true);
   const [activeDiagSystem, setActiveDiagSystem] = useState(null);
   const [activeDetailSystem, setActiveDetailSystem] = useState(null);
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
   
   // Add System Form Modal States
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -119,11 +120,16 @@ export default function SystemsPage() {
     }
   };
 
-  const handleDeleteSystem = async (systemId) => {
-    if (window.confirm(`Are you sure you want to delete ${systemId}?`)) {
+  const handleDeleteSystem = (systemId) => {
+    setDeleteConfirm(systemId);
+  };
+
+  const confirmDelete = async () => {
+    if (deleteConfirm) {
       try {
-        const systemRef = ref(db, `systems/${systemId}`);
+        const systemRef = ref(db, `systems/${deleteConfirm}`);
         await remove(systemRef);
+        setDeleteConfirm(null);
       } catch (error) {
         console.error("Error deleting system: ", error);
       }
@@ -315,6 +321,99 @@ export default function SystemsPage() {
                   </button>
                 </div>
               </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {deleteConfirm && (
+          <div className="investigate-overlay" onClick={() => setDeleteConfirm(null)}>
+            <motion.div 
+              className="investigate-modal small"
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              style={{
+                background: 'linear-gradient(180deg, #111111 0%, #0a0a0a 100%)',
+                border: '1px solid rgba(239, 68, 68, 0.3)',
+                boxShadow: '0 0 40px rgba(239, 68, 68, 0.15)',
+                textAlign: 'center',
+                padding: '32px',
+                width: '400px'
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div style={{ marginBottom: '24px' }}>
+                <div style={{ 
+                  width: '72px', 
+                  height: '72px', 
+                  borderRadius: '50%', 
+                  background: 'rgba(239, 68, 68, 0.1)', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center', 
+                  margin: '0 auto 20px',
+                  border: '1px solid rgba(239, 68, 68, 0.4)',
+                  boxShadow: '0 0 20px rgba(239, 68, 68, 0.2)'
+                }}>
+                  <Trash2 size={36} color="#ef4444" />
+                </div>
+                <h3 style={{ color: '#fff', fontSize: '22px', marginBottom: '12px', letterSpacing: '0.5px' }}>Confirm Deletion</h3>
+                <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '15px', lineHeight: '1.6' }}>
+                  Are you absolutely sure you want to decommission and delete <strong style={{ color: '#ef4444', fontWeight: '600' }}>{deleteConfirm}</strong>? 
+                  <br/><br/>
+                  This action cannot be undone and will permanently remove all associated telemetry data.
+                </p>
+              </div>
+              <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', marginTop: '32px' }}>
+                <button 
+                  className="interactive-btn"
+                  style={{
+                    padding: '12px 24px',
+                    background: 'rgba(255,255,255,0.05)',
+                    color: '#fff',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontWeight: '500',
+                    flex: 1,
+                    transition: 'all 0.3s ease'
+                  }}
+                  onClick={() => setDeleteConfirm(null)}
+                  onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+                  onMouseOut={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                >
+                  Cancel
+                </button>
+                <button 
+                  className="interactive-btn"
+                  style={{
+                    padding: '12px 24px',
+                    background: 'linear-gradient(135deg, rgba(239,68,68,0.2) 0%, rgba(239,68,68,0.05) 100%)',
+                    color: '#ef4444',
+                    border: '1px solid rgba(239,68,68,0.4)',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontWeight: '600',
+                    flex: 1,
+                    boxShadow: '0 0 15px rgba(239,68,68,0.2)',
+                    transition: 'all 0.3s ease'
+                  }}
+                  onClick={confirmDelete}
+                  onMouseOver={(e) => {
+                    e.currentTarget.style.background = 'rgba(239,68,68,0.2)';
+                    e.currentTarget.style.boxShadow = '0 0 25px rgba(239,68,68,0.4)';
+                  }}
+                  onMouseOut={(e) => {
+                    e.currentTarget.style.background = 'linear-gradient(135deg, rgba(239,68,68,0.2) 0%, rgba(239,68,68,0.05) 100%)';
+                    e.currentTarget.style.boxShadow = '0 0 15px rgba(239,68,68,0.2)';
+                  }}
+                >
+                  Confirm Delete
+                </button>
+              </div>
             </motion.div>
           </div>
         )}

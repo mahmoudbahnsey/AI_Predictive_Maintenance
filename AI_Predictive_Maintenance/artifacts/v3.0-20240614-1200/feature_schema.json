@@ -1,0 +1,6 @@
+{
+  "raw_features": ["Ia", "Ib", "VDC", "IDC", "T1", "T2", "T3", "VD"],
+  "engineered_features": ["powerEst", "currentImbalance", "avgTemp", "deltaT", "voltageDropPct", "tempRiseHigh", "highCurrent"],
+  "required_for_inference": ["Ia", "Ib", "VDC", "IDC", "T1", "T2", "T3", "VD", "powerEst", "currentImbalance", "avgTemp", "deltaT", "voltageDropPct", "tempRiseHigh", "highCurrent"],
+  "label_encoder_classes": ["F0", "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8"]
+}

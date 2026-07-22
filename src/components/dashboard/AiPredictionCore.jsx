@@ -145,7 +145,7 @@ export default function AiPredictionCore({ state, predictedClass, confidence, de
               <pre style={{ margin: 0, color: '#e3ebe7', fontSize: '13px', fontFamily: 'monospace', whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>
 {JSON.stringify({
   model: `VoltIQ ${modelVersion}`,
-  architecture: "RandomForestClassifier",
+  architecture: "Rule-Based Fault Analyzer (JS Fallback)",
   hyperparameters: {
     n_estimators: 100,
     max_depth: null,

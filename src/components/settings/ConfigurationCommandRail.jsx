@@ -1,12 +1,15 @@
 import { motion } from 'framer-motion';
-import { Lock } from 'lucide-react';
 
-export default function ConfigurationCommandRail({ activeSection, onSelect, unsavedCount }) {
+export default function ConfigurationCommandRail({ activeSection, onSelect }) {
+  // Simplified to the essentials only. Removed Appearance (global theme picker exists in header),
+  // Data Sync (backend detail), and Audit (separate concern / admin logs).
+  // Keeps the UI very simple and focused on the important configuration.
   const categories = [
     { id: 'account', label: 'Account & Profile' },
-    { id: 'appearance', label: 'Appearance & Theme' },
     { id: 'notifications', label: 'Notifications & Alerts' },
-    { id: 'thresholds', label: 'System Limits & Units' }
+    { id: 'thresholds', label: 'System Limits & Units' },
+    { id: 'monitoring', label: 'Monitoring Behavior' },
+    { id: 'security', label: 'Security Preferences' },
   ];
 
   return (
@@ -22,12 +25,7 @@ export default function ConfigurationCommandRail({ activeSection, onSelect, unsa
           className={`rail-item ${activeSection === c.id ? 'active' : ''}`}
           onClick={() => onSelect(c.id)}
         >
-          <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            {c.locked && <Lock size={12} color="#5a6b63" />}
-            {c.label}
-          </span>
-          {c.unsaved && <div className="rail-dot unsaved" />}
-          {c.error && !c.unsaved && <div className="rail-dot error" />}
+          {c.label}
         </div>
       ))}
     </motion.nav>

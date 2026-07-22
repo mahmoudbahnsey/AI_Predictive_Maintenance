@@ -1,0 +1,15 @@
+{
+  "version": "v3.0",
+  "date": "20240614-1200",
+  "dataset_rows": 10892,
+  "feature_count": 15,
+  "model_type": "LightGBM",
+  "artifact_dir": "AI_Predictive_Maintenance/artifacts/v3.0-20240614-1200",
+  "metrics_summary": {
+    "accuracy": 0.978,
+    "f7_recall": 0.941,
+    "healthy_precision": 0.982,
+    "false_alarm_rate": 0.021
+  },
+  "rollback_to": "v2.1"
+}

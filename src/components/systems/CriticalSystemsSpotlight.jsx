@@ -4,12 +4,8 @@ import {
   ShieldAlert, 
   Wrench, 
   X, 
-  Activity, 
-  Clock, 
-  User, 
   AlertOctagon, 
   RefreshCw, 
-  CheckCircle,
   ChevronDown
 } from 'lucide-react';
 

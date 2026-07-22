@@ -1,14 +1,12 @@
 import {
-  Activity,
-  AlertTriangle,
   Bell,
   FileText,
   LayoutDashboard,
   Settings,
-  Shield,
   Users,
   Zap,
   Cpu,
+  Database,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
@@ -19,10 +17,40 @@ const mainItems = [
   { icon: Zap, label: 'Systems', path: '/systems', id: 'systems' },
   { icon: Bell, label: 'Alerts', path: '/alerts', id: 'alerts' },
   { icon: FileText, label: 'Reports', path: '/reports', id: 'reports' },
+  { icon: Database, label: 'Data Intake', path: '/data', id: 'data' },
 ];
+
+function parseTimezoneOffset(tz) {
+  if (!tz || tz === 'UTC') return 0;
+  const match = tz.match(/UTC([+-])?(\d+)(?::(\d+))?/);
+  if (!match) return 0;
+  const sign = match[1] === '-' ? -1 : 1;
+  const hours = parseInt(match[2], 10) || 0;
+  const mins = parseInt(match[3], 10) || 0;
+  return sign * (hours + mins / 60);
+}
+
+function formatTimeInZone(date, timezone) {
+  const offset = parseTimezoneOffset(timezone);
+  // Work from true UTC components of the real instant
+  let totalMins = (date.getUTCHours() * 60 + date.getUTCMinutes()) + (offset * 60);
+  // normalize to [0, 24*60)
+  totalMins = ((totalMins % (24 * 60)) + (24 * 60)) % (24 * 60);
+  let h24 = Math.floor(totalMins / 60);
+  let mins = Math.floor(totalMins % 60);
+  const secs = date.getUTCSeconds();
+  // 12-hour format to match previous display style
+  let h12 = h24 % 12;
+  if (h12 === 0) h12 = 12;
+  const ampm = h24 < 12 ? 'AM' : 'PM';
+  const pad = (n) => String(n).padStart(2, '0');
+  // hour as 'numeric' (no leading zero for single digit)
+  return `${h12}:${pad(mins)}:${pad(secs)} ${ampm}`;
+}
 
 export default function Sidebar({ active = 'dashboard' }) {
   const [now, setNow] = useState(new Date());
+  const [timezone, setTimezone] = useState(() => localStorage.getItem('voltiq-timezone') || 'UTC-8');
   const { isAdmin } = useAuth();
 
   const systemItems = [
@@ -31,9 +59,21 @@ export default function Sidebar({ active = 'dashboard' }) {
     ...(isAdmin ? [{ icon: Users, label: 'Users', path: '/users', id: 'users' }] : []),
   ];
 
+  // Live clock ticking on real time
   useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date()), 1000);
     return () => window.clearInterval(timer);
+  }, []);
+
+  // Listen for time zone changes from Settings (Account Identity)
+  useEffect(() => {
+    const handleTZChange = (e) => {
+      if (e.detail && e.detail.timezone) {
+        setTimezone(e.detail.timezone);
+      }
+    };
+    window.addEventListener('voltiq-timezone-change', handleTZChange);
+    return () => window.removeEventListener('voltiq-timezone-change', handleTZChange);
   }, []);
 
   const renderNavGroup = (title, items) => (
@@ -79,7 +119,7 @@ export default function Sidebar({ active = 'dashboard' }) {
       <div className="sidebar-footer-fixed" style={{ padding: '0 14px 8px', flexShrink: 0 }}>
         <div className="system-time-card" style={{ marginBottom: 0, marginTop: '4px' }}>
           <span>System Time</span>
-          <strong>{now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', second: '2-digit' })}</strong>
+          <strong>{formatTimeInZone(now, timezone)}</strong>
           <small><i /> Live</small>
         </div>
       </div>

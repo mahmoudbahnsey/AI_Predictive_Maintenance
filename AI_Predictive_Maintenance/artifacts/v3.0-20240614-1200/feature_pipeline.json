@@ -1,0 +1,6 @@
+{
+  "feature_cols": ["Ia", "Ib", "VDC", "IDC", "T1", "T2", "T3", "VD", "powerEst", "currentImbalance", "avgTemp", "deltaT", "voltageDropPct", "tempRiseHigh", "highCurrent"],
+  "engineered": ["powerEst", "currentImbalance", "avgTemp", "deltaT", "voltageDropPct", "tempRiseHigh", "highCurrent"],
+  "label_encoder": ["F0", "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8"],
+  "original_label_col": "FDD"
+}
